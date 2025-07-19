@@ -1,0 +1,2119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catering Weekly Schedule Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles & typography */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+            background: linear-gradient(135deg, #e0f2f7 0%, #c1d9e7 100%); /* Softer, cooler gradient */
+            min-height: 100vh;
+            padding: 20px;
+            color: #333; /* Darker text for better contrast */
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 24px; /* More rounded corners */
+            box-shadow: 0 25px 50px rgba(0,0,0,0.08); /* Softer, larger shadow */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #007bff, #0056b3); /* Primary blue gradient */
+            color: white;
+            padding: 40px; /* More padding */
+            text-align: center;
+            position: relative;
+            overflow: hidden; /* For subtle background patterns */
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100%" height="100%" fill="url(#dots)"/></svg>') repeat;
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .header h1 {
+            font-size: 2.8rem; /* Slightly larger */
+            margin-bottom: 12px;
+            font-weight: 800; /* Bolder */
+            letter-spacing: -0.5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2rem; /* Slightly larger */
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 40px; /* More space between sections */
+            padding: 40px;
+        }
+
+        .first-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* Retained grid for potential future use or broader layout */
+            gap: 40px;
+        }
+
+        .section {
+            background: #fdfdfd; /* Lighter background for sections */
+            border-radius: 18px; /* Slightly more rounded */
+            padding: 30px; /* More padding */
+            border: 1px solid #eef2f5; /* Subtle border */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.03); /* Lighter shadow */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.06);
+        }
+
+        .section h2 {
+            color: #2c3e50; /* Darker heading color */
+            margin-bottom: 25px; /* More space below heading */
+            font-size: 1.6rem; /* Larger */
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            border-bottom: 1px solid #f0f0f0; /* Subtle separator */
+            padding-bottom: 15px;
+        }
+
+        /* Icon improvements */
+        .business-info h2::before { content: "🏪"; font-size: 1.8rem; }
+        .dish-manager h2::before { content: "🍽️"; font-size: 1.8rem; }
+        .export-section h2::before { content: "📤"; font-size: 1.8rem; }
+        .preview-section h2::before { content: "👀"; font-size: 1.8rem; }
+        /* Adjusted for the new schedule editor heading */
+        .schedule-editor h2 { display: flex; align-items: center; justify-content: space-between; }
+        .schedule-editor h2::before { content: "📅"; font-size: 1.8rem; margin-right: 12px; }
+
+
+        /* Business Info Section */
+        .business-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px; /* More gap */
+        }
+
+        .business-form .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .business-form input, .business-form textarea {
+            padding: 14px; /* More padding */
+            border: 1px solid #dbe2e9; /* Lighter border */
+            border-radius: 10px; /* More rounded */
+            font-size: 1.05rem; /* Slightly larger font */
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: #f8fafd; /* Slight background tint */
+        }
+
+        .business-form input:focus, .business-form textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.2); /* Soft focus ring */
+            background: white;
+        }
+
+        .business-form textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        /* Dish Upload Section */
+        .upload-area {
+            border: 3px dashed #cdd8e4; /* More prominent dashed border */
+            background: #f8fafd; /* Lighter background */
+            border-radius: 15px;
+            padding: 35px; /* More padding */
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+            color: #6a7c8f;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .upload-area:hover {
+            border-color: #007bff;
+            background: #eef8ff;
+            color: #007bff;
+        }
+
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #e6f7e9;
+            color: #28a745;
+        }
+
+        .dish-form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .dish-form input {
+            padding: 14px;
+            border: 1px solid #dbe2e9;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: #f8fafd;
+        }
+
+        .dish-form input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+            background: white;
+        }
+
+        .btn {
+            padding: 14px 28px; /* More padding */
+            border: none;
+            border-radius: 10px; /* More rounded */
+            font-size: 1.05rem;
+            font-weight: 700; /* Bolder */
+            cursor: pointer;
+            transition: all 0.3s ease, transform 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            letter-spacing: 0.5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 18px rgba(0,123,255,0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            color: white;
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 6px 18px rgba(40,167,69,0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 6px 18px rgba(220,53,69,0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+            color: #333; /* Darker text for contrast */
+        }
+
+        .btn-warning:hover {
+            box-shadow: 0 6px 18px rgba(255,193,7,0.4);
+        }
+
+        .dishes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); /* Slightly larger min-width */
+            gap: 20px; /* More gap */
+            margin-top: 25px;
+        }
+
+        .dish-item {
+            background: white;
+            border-radius: 15px; /* More rounded */
+            padding: 15px; /* More padding */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08); /* Softer shadow */
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #eff3f7;
+            cursor: grab; /* Indicate draggable */
+        }
+
+        .dish-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+        }
+
+        .dish-item img {
+            width: 100%;
+            height: 90px; /* Slightly taller */
+            object-fit: cover;
+            border-radius: 10px; /* More rounded */
+            margin-bottom: 10px;
+        }
+
+        .dish-item .name {
+            font-size: 0.95rem; /* Slightly larger */
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 6px;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+
+        .dish-item .price {
+            font-size: 0.85rem; /* Slightly larger */
+            color: #28a745;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .dish-item .buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .dish-item .edit-btn {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+            color: #212529;
+            border: none;
+            padding: 8px 14px; /* More padding */
+            border-radius: 8px; /* More rounded */
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dish-item .edit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(255, 193, 7, 0.4);
+        }
+
+        .dish-item .delete-btn {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border: none;
+            padding: 8px 14px; /* More padding */
+            border-radius: 8px; /* More rounded */
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dish-item .delete-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(220, 53, 69, 0.4);
+        }
+
+        .dish-item .buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        /* Schedule Grid */
+        /* Changed to flex for better wrapping on small screens */
+        .schedule-grid {
+            display: flex; /* Changed to flex */
+            flex-wrap: wrap; /* Allows wrapping */
+            gap: 15px;
+            margin-bottom: 30px;
+            overflow-x: hidden; /* Prevent horizontal scroll on this */
+            padding-bottom: 0; /* Remove padding if not scrolling */
+            justify-content: center; /* Center items when they wrap */
+        }
+
+        /* Ensure the schedule grid container allows horizontal scrolling when needed */
+        .schedule-container {
+            overflow-x: hidden; /* Changed to hidden */
+            margin: 0; /* Remove negative margin */
+            padding: 15px; /* Add padding to container itself */
+            border-radius: 10px;
+            background: #f8f9fa; /* Background for container */
+            border: 2px solid #e9ecef; /* Border for container */
+        }
+
+        /* Remove scrollbar styling as overflow-x is hidden now */
+        .schedule-container::-webkit-scrollbar {
+            height: 0px;
+        }
+
+        .schedule-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .schedule-container::-webkit-scrollbar-thumb {
+            background: transparent;
+        }
+
+        /* Ensure min-width is responsive now */
+        .day-card {
+            min-height: 200px; /* Ensure a base height for visual consistency */
+            flex: 1 1 calc(50% - 15px); /* Two columns on larger mobile, but flexible */
+            max-width: calc(50% - 15px); /* Max width for two columns */
+        }
+        .day-card:hover {
+            transform: translateY(-3px); /* Slightly less intense hover transform */
+            box-shadow: 0 8px 18px rgba(0,0,0,0.08); /* Softer shadow */
+        }
+
+        .day-header {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 700;
+            color: #495057;
+            font-size: 1.1rem;
+        }
+
+        .day-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1; /* Allows it to expand */
+        }
+
+        .day-status {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .status-btn {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #dee2e6;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .status-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        /* Text Mode Specific (removed from JS, keeping styles just in case for text input type) */
+        .text-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        /* Image Mode (Dropdown) Specific */
+        .dish-selector {
+            position: relative;
+        }
+
+        .dish-dropdown {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: white;
+            cursor: pointer;
+            appearance: none; /* Add this to remove default dropdown arrow */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007bff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.4H18.6c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.7c0%204.6%201.8%208.7%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.9%205.4s9.3-1.8%2012.9-5.4L287%2095.6c3.6-4.2%205.4-8.3%205.4-12.9%200-4.6-1.8-8.7-5.4-12.9z%22%2F%3E%3C%2Fsvg%3E'); /* Custom arrow */
+            background-repeat: no-repeat, repeat;
+            background-position: right .7em top 50%, 0 0;
+            background-size: .65em auto, 100%;
+        }
+
+        .dish-dropdown:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .selected-dishes {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1; /* Allow to expand */
+            justify-content: flex-start; /* Align selected dishes to top */
+        }
+
+        .selected-dish {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer; /* Indicate clickable to remove in DnD mode */
+        }
+
+        .selected-dish img {
+            width: 30px;
+            height: 30px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .selected-dish .remove-btn {
+            margin-left: auto;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* Export Section */
+        .export-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .export-buttons .btn {
+            text-align: center;
+        }
+
+        /* Preview Section */
+        .preview-section h2::before {
+            content: "👀";
+        }
+
+        .schedule-preview {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            min-width: unset; /* Remove min-width for responsiveness */
+            margin: 0 auto;
+            transition: min-width 0.3s ease, padding 0.3s ease; 
+            overflow-x: hidden; 
+        }
+
+        /* NEW: Force export layout on the schedule-preview container */
+        .schedule-preview.force-export-layout {
+            min-width: 1500px !important; /* Forces the preview container to be wide for all 7 days */
+            overflow-x: visible !important; /* Crucial: ensures content is not clipped by parent */
+            padding: 50px !important; /* Consistent padding for export */
+            display: flex !important; /* Use flex to center the header and grid */
+            flex-direction: column !important;
+            align-items: center !important; /* Center the whole content block horizontally */
+            justify-content: flex-start !important; /* Ensure content starts from the top */
+        }
+
+        /* NEW: Force grid layout for image mode during export */
+        .schedule-preview.force-export-layout .preview-grid {
+            grid-template-columns: repeat(7, minmax(180px, 1fr)) !important; /* Force 7 columns */
+            gap: 25px !important; /* Maintain consistent gap */
+            align-items: flex-start !important; /* Align rows to start (top) within the grid */
+            height: auto !important; /* Allow grid height to adjust naturally */
+            margin-top: 25px !important; /* Consistent margin top */
+        }
+
+        /* NEW: Styles for individual preview days within the forced export layout */
+        .schedule-preview.force-export-layout .preview-day {
+            display: flex !important;
+            flex-direction: column !important;
+            height: 100% !important; /* Make sure each day fills its column height */
+            padding-top: 15px !important; /* ADDED: Top padding for vertical space */
+            padding-bottom: 15px !important; /* ADDED: Bottom padding for vertical space */
+            text-align: center !important; /* Ensure text alignment remains centered */
+        }
+
+        /* NEW: Styles for preview dishes container/status messages within the forced export layout */
+        .schedule-preview.force-export-layout .preview-dishes,
+        .schedule-preview.force-export-layout .status-message {
+            flex-grow: 1 !important; /* Allow these elements to fill available vertical space */
+            display: flex !important;
+            flex-direction: column !important; /* Maintain column layout for dishes */
+            justify-content: flex-start !important; /* Align content to the top */
+            min-height: 250px !important; /* **CRITICAL ADDITION:** Set a generous min-height for consistent vertical sizing */
+            padding-bottom: 0 !important; /* Reset any padding-bottom that might create unevenness */
+            padding-top: 10px !important; /* ADDED: Top padding for dishes/messages */
+        }
+
+        .schedule-preview.force-export-layout .status-message {
+            align-items: center !important; /* Center content horizontally */
+            justify-content: center !important;
+            padding-top: 20px !important; /* Adjust top padding for centered status */
+            padding-bottom: 20px !important; /* Adjust bottom padding for centered status */
+        }
+        
+        /* NEW: Ensure consistent dish height if multiple dishes, and proper spacing */
+        .schedule-preview.force-export-layout .preview-dishes .preview-dish {
+            flex-shrink: 0 !important; /* Prevent shrinking if space is tight */
+            height: auto !important; /* Allow natural height for dishes */
+            margin-bottom: 15px !important; /* Consistent bottom margin for dishes */
+        }
+
+        /* Remove the last dish's bottom margin to avoid extra space */
+        .schedule-preview.force-export-layout .preview-dishes .preview-dish:last-child {
+            margin-bottom: 0 !important;
+        }
+
+        /* NEW: Styles for the day name in forced export */
+        .schedule-preview.force-export-layout .preview-day-name {
+            margin-bottom: 20px !important; /* Increased bottom margin for more space */
+            min-height: 50px !important; /* Ensure minimum height for day name block */
+        }
+
+        /* NEW: Force table layout for text mode during export */
+        .schedule-preview.force-export-layout .preview-table {
+            min-width: 1260px !important; /* Approx. 7 columns * 180px/column */
+            width: 100% !important;
+            border-collapse: collapse !important; /* Ensure collapse is maintained */
+            margin-top: 25px !important; /* Consistent margin top */
+            font-size: 1rem !important; /* Consistent font size */
+        }
+        
+        .schedule-preview.force-export-layout .preview-table th,
+        .schedule-preview.force-export-layout .preview-table td {
+            vertical-align: top !important; /* Ensure content in table cells aligns to top */
+            height: auto !important; /* Allow natural height for cells */
+            padding-top: 20px !important; /* ADDED: Top padding for table cells */
+            padding-bottom: 20px !important; /* ADDED: Bottom padding for table cells */
+            text-align: center !important; /* Ensure text is centered */
+            border: 1px solid #eef2f5 !important; /* Consistent border */
+        }
+
+        /* Ensure header of table in export maintains its style */
+        .schedule-preview.force-export-layout .preview-table th {
+            background: linear-gradient(135deg, #007bff, #0056b3) !important; /* Consistent header gradient */
+            color: white !important;
+        }
+
+
+        .preview-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 25px;
+            border-bottom: 3px solid #007bff;
+        }
+
+        .preview-business-name {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 12px;
+        }
+
+        .preview-business-info {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+
+        .preview-week-dates {
+            font-size: 1.3rem;
+            color: #007bff;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+
+        /* Professional Table Style for Text Mode */
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            font-size: 1rem;
+        }
+
+        .preview-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 18px;
+            text-align: center;
+            font-weight: 700;
+            border: 2px solid #5a6fd8;
+            min-width: 120px;
+            font-size: 1rem;
+        }
+
+        .preview-table td {
+            padding: 25px 18px;
+            border: 2px solid #dee2e6;
+            text-align: center;
+            vertical-align: middle; /* Original vertical alignment */
+            min-height: 120px;
+        }
+
+        .preview-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        /* Image Grid Style - IMPROVED */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* Use auto-fit for dynamic columns */
+            gap: 20px;
+            margin-top: 25px;
+            align-items: start; /* Align rows to start (top) */
+        }
+
+        .preview-day {
+            text-align: center;
+            min-width: 0;
+            display: flex; /* Make day a flex container for its content */
+            flex-direction: column;
+        }
+
+        .preview-day-name {
+            font-weight: 700;
+            color: white;
+            margin-bottom: 18px;
+            font-size: 1rem;
+            padding: 12px 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 8px;
+            word-wrap: break-word;
+            line-height: 1.2;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-dishes {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 200px; /* Base min-height for dishes section */
+            flex-grow: 1; /* Allow to grow */
+            justify-content: flex-start; /* Align dishes to start (top) */
+        }
+
+        /* Better dish card sizing and text handling */
+        .preview-dish {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            transition: transform 0.3s ease;
+            min-height: 160px; /* Consistent height for dishes */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-dish:hover {
+            transform: scale(1.02);
+        }
+
+        .preview-dish img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .preview-dish-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Remove text truncation to show full dish names */
+        .preview-dish-name {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .preview-dish-price {
+            color: #28a745;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-top: auto;
+        }
+
+        .status-message {
+            padding: 25px;
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px dashed #dee2e6;
+            min-height: 160px; /* Base min-height for status messages */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-grow: 1; /* Allow to grow */
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* New Drag & Drop Switch Styling */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #555;
+            flex-shrink: 0; /* Prevent from shrinking */
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 28px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #007bff;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #007bff;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(22px);
+            -ms-transform: translateX(22px);
+            transform: translateX(22px);
+        }
+
+        /* Drag & Drop Specific Styles for day-card */
+        .day-card.drag-over {
+            border: 2px dashed #007bff;
+            background-color: #e6f7ff;
+            box-shadow: 0 0 15px rgba(0,123,255,0.3);
+        }
+        .day-card.drag-over .day-header {
+            color: #007bff;
+        }
+        .day-card.no-drop {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* --- MOBILE RESPONSIVENESS (NEW/UPDATED) --- */
+        @media (max-width: 1024px) {
+            body {
+                padding: 15px;
+            }
+
+            .container {
+                border-radius: 18px;
+                box-shadow: 0 15px 30px rgba(0,0,0,0.06);
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2.2rem;
+            }
+
+            .header p {
+                font-size: 1.05rem;
+            }
+
+            .main-content {
+                padding: 30px 20px;
+                gap: 30px;
+            }
+
+            .first-row {
+                grid-template-columns: 1fr; /* Stack on smaller screens */
+                gap: 30px;
+            }
+
+            .section {
+                padding: 25px;
+                border-radius: 15px;
+            }
+
+            .section h2 {
+                font-size: 1.4rem;
+                margin-bottom: 20px;
+                padding-bottom: 12px;
+            }
+
+            .business-form {
+                grid-template-columns: 1fr; /* Stack inputs */
+            }
+
+            .dish-manager .upload-area {
+                padding: 25px;
+                font-size: 1rem;
+            }
+
+            .dishes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); /* Smaller dish items */
+                gap: 15px;
+            }
+
+            .dish-item img {
+                height: 80px;
+            }
+
+            .dish-item .name {
+                font-size: 0.9rem;
+            }
+
+            .dish-item .price {
+                font-size: 0.8rem;
+            }
+
+            .dish-item .edit-btn, .dish-item .delete-btn {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+
+            .schedule-editor h2 {
+                flex-direction: column; /* Stack heading and switch */
+                align-items: flex-start; /* Align to start */
+                gap: 15px; /* Space between them */
+            }
+
+            .switch-container {
+                margin-top: 5px; /* Slight margin below toggle */
+                width: 100%; /* Take full width */
+                justify-content: center; /* Center the switch on mobile */
+                font-size: 0.95rem; /* Smaller font for switch text */
+            }
+
+            /* Day card adjustments for wrapping */
+            .day-card {
+                flex: 1 1 calc(50% - 7.5px); /* Two columns, considering gap */
+                max-width: calc(50% - 7.5px);
+                padding: 20px;
+            }
+            .schedule-grid {
+                gap: 15px;
+            }
+
+            /* Preview Section on Mobile */
+            .schedule-preview {
+                padding: 25px;
+                min-width: unset; /* Ensure it's responsive */
+            }
+
+            .preview-header {
+                margin-bottom: 30px;
+                padding-bottom: 15px;
+            }
+
+            .preview-business-name {
+                font-size: 1.8rem;
+            }
+            .preview-business-info {
+                font-size: 1rem;
+            }
+            .preview-week-dates {
+                font-size: 1.1rem;
+            }
+
+            .preview-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* 2 columns on most phones */
+                gap: 15px;
+            }
+            .preview-day-name {
+                font-size: 0.95rem;
+                padding: 10px 6px;
+                min-height: 40px;
+            }
+            .preview-dish {
+                padding: 10px;
+                min-height: 140px; /* Adjust min-height for mobile */
+            }
+            .preview-dish img {
+                height: 70px;
+                margin-bottom: 8px;
+            }
+            .preview-dish-name {
+                font-size: 0.85rem;
+            }
+            .preview-dish-price {
+                font-size: 0.9rem;
+            }
+            .status-message {
+                font-size: 0.9rem;
+                min-height: 140px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .day-card {
+                flex: 1 1 calc(50% - 7.5px); /* Still two columns */
+                max-width: calc(50% - 7.5px);
+            }
+            .schedule-grid {
+                justify-content: center; /* Ensure centering */
+            }
+            .export-buttons {
+                grid-template-columns: 1fr; /* Stack export buttons */
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                border-radius: 15px;
+            }
+            .header {
+                padding: 25px 15px;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .header p {
+                font-size: 0.9rem;
+            }
+            .main-content {
+                padding: 25px 15px;
+                gap: 25px;
+            }
+            .section {
+                padding: 20px;
+                border-radius: 12px;
+            }
+            .section h2 {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+            }
+            .dish-form input {
+                padding: 12px;
+                font-size: 1rem;
+            }
+            .btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            .dishes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Even smaller for very small screens */
+                gap: 10px;
+            }
+            .dish-item {
+                padding: 10px;
+            }
+            .dish-item img {
+                height: 70px;
+            }
+            .dish-item .name {
+                font-size: 0.85rem;
+            }
+            .dish-item .price {
+                font-size: 0.75rem;
+            }
+            .dish-item .edit-btn, .dish-item .delete-btn {
+                padding: 5px 8px;
+                font-size: 0.7rem;
+            }
+            
+            .schedule-editor h2 {
+                align-items: center; /* Center the stacked elements */
+            }
+
+            .day-card {
+                flex: 1 1 100%; /* Single column on very small screens */
+                max-width: 100%;
+                padding: 15px;
+            }
+            .schedule-grid {
+                gap: 15px; /* Maintain gap */
+            }
+
+            .preview-grid {
+                grid-template-columns: 1fr; /* Stack preview days vertically on small phones */
+                gap: 20px;
+            }
+        }
+
+        /* Adjustments for the export forcing layout */
+        @media print, (min-width: 1500px) {
+            .schedule-preview.force-export-layout {
+                min-width: 1500px !important; /* Forces the preview container to be wide for all 7 days */
+                overflow-x: visible !important; /* Crucial: ensures content is not clipped by parent */
+                padding: 50px !important; /* Consistent padding for export */
+                display: flex !important; /* Use flex to center the header and grid */
+                flex-direction: column !important;
+                align-items: center !important; /* Center the whole content block horizontally */
+                justify-content: flex-start !important; /* Ensure content starts from the top */
+            }
+
+            .schedule-preview.force-export-layout .preview-grid {
+                grid-template-columns: repeat(7, minmax(180px, 1fr)) !important; /* Force 7 columns */
+                gap: 25px !important; /* Maintain consistent gap */
+                align-items: flex-start !important; /* Align rows to start (top) within the grid */
+                height: auto !important; /* Allow grid height to adjust naturally */
+                margin-top: 25px !important; /* Consistent margin top */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ Catering Weekly Schedule Generator</h1>
+            <p>Create professional weekly catering schedules in minutes</p>
+        </div>
+
+        <div class="main-content">
+            <div class="first-row">
+                <div class="section business-info" style="grid-column: 1 / -1;"> <h2>Business Information</h2>
+                    <div class="business-form">
+                        <input type="text" id="businessName" placeholder="Business Name" value="Fresh Pastry Food & Catering">
+                        <input type="text" id="businessPhone" placeholder="Phone Number" value="(213) 300-6674">
+                        <textarea id="businessAddress" placeholder="Address (optional)" class="full-width"></textarea>
+                        <textarea id="businessNotes" placeholder="Additional Notes (optional)" class="full-width"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section dish-manager" id="dishManagerSection"> <h2>Dish Manager</h2>
+                <div class="upload-area" id="uploadArea">
+                    <p>📸 Click or drag & drop dish images here</p>
+                    <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                </div>
+                <div class="dish-form" id="dishForm" style="display: none;">
+                    <input type="text" id="dishName" placeholder="Dish name">
+                    <input type="text" id="dishPrice" placeholder="Price (e.g., $15)">
+                    <button class="btn btn-primary" id="addDishBtn">Add Dish</button>
+                    <button class="btn btn-danger" id="cancelBtn">Cancel</button>
+                </div>
+                <div class="dishes-grid" id="dishesGrid"></div>
+            </div>
+
+            <div class="section schedule-editor">
+                <h2>
+                    <span>📅 Weekly Schedule Editor</span>
+                    <div class="switch-container">
+                        <span>Dropdown Mode</span>
+                        <label class="switch">
+                            <input type="checkbox" id="dragDropToggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>Drag & Drop Mode</span>
+                    </div>
+                </h2>
+                <div style="margin-bottom: 15px; padding: 10px; background: #d4edda; border: 2px solid #c3e6cb; border-radius: 8px; font-size: 0.9rem; text-align: center;">
+                    ✅ <strong>All 7 days are visible!</strong> Days will automatically arrange to fit your screen
+                </div>
+                <div class="schedule-container">
+                    <div class="schedule-grid" id="scheduleGrid"></div>
+                </div>
+            </div>
+
+            <div class="section preview-section">
+                <h2>Professional Preview</h2>
+                <div class="schedule-preview" id="schedulePreview">
+                    </div>
+            </div>
+
+            <div class="section export-section">
+                <h2>Export Schedule</h2>
+                <div class="export-buttons">
+                    <button class="btn btn-success" id="exportPngBtn">📸 Export PNG</button>
+                    <button class="btn btn-danger" id="exportPdfBtn">📄 Export PDF</button>
+                </div>
+                <button class="btn btn-warning" id="shareBtn" style="width: 100%; margin-bottom: 15px;">📱 Copy for WhatsApp/Social</button>
+                <button class="btn btn-primary" id="debugBtn" style="width: 100%; font-size: 0.9rem;">🔧 Debug Export Issues</button>
+                
+                <div style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 8px; font-size: 0.9rem;">
+                    <strong>💡 Alternative Methods:</strong><br>
+                    • Right-click the preview → "Save as image"<br>
+                    • Take a screenshot of the preview<br>
+                    • Copy this code to use in a regular browser
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App state
+        let dishes = [];
+        let schedule = {};
+        let currentImageFile = null; // Stored for single dish upload
+        let isDragAndDropMode = false; // New state for the switch
+
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSchedule();
+            setupEventListeners();
+            renderScheduleGrid(); // Renders the grid based on initial mode (dropdown)
+            renderDishes(); // Render dishes for drag-and-drop
+            updatePreview();
+            
+            // Ensure we start in wrapping mode (original function)
+            ensureWrappingMode();
+        });
+
+        function initializeSchedule() {
+            days.forEach(day => {
+                schedule[day] = {
+                    status: 'normal', // normal, off, tbd
+                    dishes: [], // For image mode
+                    text: '' // Text mode is effectively removed, but keeping 'text' property just in case
+                };
+            });
+        }
+
+        function setupEventListeners() {
+            // Business info
+            document.getElementById('businessName').addEventListener('input', updatePreview);
+            document.getElementById('businessPhone').addEventListener('input', updatePreview);
+            document.getElementById('businessAddress').addEventListener('input', updatePreview);
+            document.getElementById('businessNotes').addEventListener('input', updatePreview);
+
+            // Image mode (Dish Manager) events
+            const uploadArea = document.getElementById('uploadArea');
+            const imageInput = document.getElementById('imageInput');
+            const addDishBtn = document.getElementById('addDishBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+
+            uploadArea.addEventListener('click', () => imageInput.click());
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('drop', handleDrop);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+
+            imageInput.addEventListener('change', handleImageSelect);
+            addDishBtn.addEventListener('click', addDish);
+            cancelBtn.addEventListener('click', cancelDishForm);
+
+            // New Drag & Drop Toggle
+            document.getElementById('dragDropToggle').addEventListener('change', function() {
+                isDragAndDropMode = this.checked;
+                renderScheduleGrid(); // Re-render the grid based on the new mode
+                updatePreview();
+                renderDishes(); // Ensure dishes are draggable/non-draggable as needed
+            });
+
+            // Export events
+            document.getElementById('exportPngBtn').addEventListener('click', exportAsPNG);
+            document.getElementById('exportPdfBtn').addEventListener('click', exportAsPDF);
+            document.getElementById('shareBtn').addEventListener('click', copyForSharing);
+            document.getElementById('debugBtn').addEventListener('click', debugExportIssues);
+
+            // Enter key for dish name
+            document.getElementById('dishName').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addDish();
+                }
+            });
+        }
+
+        function renderScheduleGrid() {
+            const scheduleGrid = document.getElementById('scheduleGrid');
+            scheduleGrid.innerHTML = '';
+
+            days.forEach(day => {
+                const dayCard = document.createElement('div');
+                dayCard.className = 'day-card section'; /* Added 'section' class for consistent styling */
+                
+                // Add drag/drop event listeners if in drag-and-drop mode
+                if (isDragAndDropMode) {
+                    dayCard.setAttribute('data-day', day); // Store day name for drop target
+                    dayCard.addEventListener('dragover', handleDayDragOver);
+                    dayCard.addEventListener('dragleave', handleDayDragLeave);
+                    dayCard.addEventListener('drop', handleDayDrop);
+                } else {
+                    dayCard.removeEventListener('dragover', handleDayDragOver);
+                    dayCard.removeEventListener('dragleave', handleDayDragLeave);
+                    dayCard.removeEventListener('drop', handleDayDrop);
+                }
+
+                const statusButtons = `
+                    <div class="day-status">
+                        <button class="status-btn ${schedule[day].status === 'normal' ? 'active' : ''}" 
+                                onclick="setDayStatus('${day}', 'normal')">Normal</button>
+                        <button class="status-btn ${schedule[day].status === 'off' ? 'active' : ''}" 
+                                onclick="setDayStatus('${day}', 'off')">Off</button>
+                        <button class="status-btn ${schedule[day].status === 'tbd' ? 'active' : ''}" 
+                                onclick="setDayStatus('${day}', 'tbd')">TBD</button>
+                    </div>
+                `;
+
+                let dayContent = '';
+                if (schedule[day].status === 'normal') {
+                    if (!isDragAndDropMode) { // Original Dropdown Mode
+                        dayContent = `
+                            <div class="dish-selector">
+                                <select class="dish-dropdown" onchange="addDishToDay('${day}', this.value)">
+                                    <option value="">Select a dish...</option>
+                                    ${dishes.map(dish => `<option value="${dish.id}">${dish.name} - ${dish.price}</option>`).join('')}
+                                </select>
+                            </div>
+                        `;
+                    }
+                    // For both modes, display selected dishes
+                    dayContent += `
+                        <div class="selected-dishes">
+                            ${schedule[day].dishes.map(dishId => {
+                                const dish = dishes.find(d => d.id === dishId);
+                                return dish ? `
+                                    <div class="selected-dish" onclick="removeDishFromDay('${day}', ${dishId})"> <img src="${dish.image}" alt="${dish.name}">
+                                        <span>${dish.name}</span>
+                                        <span class="price">${dish.price}</span>
+                                        ${!isDragAndDropMode ? `<button class="remove-btn" onclick="event.stopPropagation(); removeDishFromDay('${day}', ${dishId})">×</button>` : ''}
+                                    </div>
+                                ` : '';
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
+                dayCard.innerHTML = `
+                    <div class="day-header">${day}</div>
+                    <div class="day-options">
+                        ${statusButtons}
+                        ${dayContent}
+                    </div>
+                `;
+
+                scheduleGrid.appendChild(dayCard);
+            });
+        }
+
+        function setDayStatus(day, status) {
+            schedule[day].status = status;
+            if (status !== 'normal') {
+                schedule[day].dishes = [];
+                // No need to clear text as it's not a visible mode anymore
+                // schedule[day].text = ''; 
+            }
+            renderScheduleGrid();
+            updatePreview();
+        }
+
+        // Removed updateDayText as Text Mode is removed
+        // function updateDayText(day, text) {
+        //     schedule[day].text = text;
+        //     updatePreview();
+        // }
+
+        // Image mode functions
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+            if (files.length > 0) {
+                processImageFiles(files);
+            }
+        }
+
+        function handleImageSelect(e) {
+            const files = Array.from(e.target.files);
+            processImageFiles(files);
+        }
+
+        function processImageFiles(files) {
+            if (files.length === 1) {
+                currentImageFile = files[0];
+                showDishForm();
+            } else {
+                // For multiple files, show a bulk upload interface
+                showBulkUploadInterface(files);
+            }
+        }
+
+        function showBulkUploadInterface(files) {
+            // Create bulk upload modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+                align-items: center; justify-content: center; padding: 20px;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px; 
+                max-width: 600px; max-height: 80%; overflow-y: auto; width: 100%;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            `;
+            
+            let fileInputs = '';
+            files.forEach((file, index) => {
+                const dishName = file.name.split('.')[0].replace(/[_-]/g, ' ');
+                fileInputs += `
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 15px; border: 2px solid #e9ecef; border-radius: 10px;">
+                        <img src="${URL.createObjectURL(file)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                        <div style="flex: 1;">
+                            <input type="text" class="bulk-dish-name" value="${dishName}" placeholder="Dish name" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 8px;">
+                            <input type="text" class="bulk-dish-price" placeholder="Price (e.g., $15)" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 6px;">
+                        </div>
+                    </div>
+                `;
+            });
+            
+            content.innerHTML = `
+                <h3 style="margin-bottom: 20px; color: #495057; text-align: center;">📸 Bulk Upload - ${files.length} Dishes</h3>
+                <p style="margin-bottom: 20px; color: #6c757d; text-align: center;">Review and edit the dish names and prices below:</p>
+                ${fileInputs}
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="saveBulkUpload()" style="flex: 1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Add All Dishes</button>
+                    <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+
+            // Store files in window for access in saveBulkUpload
+            window.bulkUploadFiles = files;
+        }
+
+        function saveBulkUpload() {
+            const modal = document.querySelector('[style*="position: fixed"]');
+            const nameInputs = modal.querySelectorAll('.bulk-dish-name');
+            const priceInputs = modal.querySelectorAll('.bulk-dish-price');
+            
+            window.bulkUploadFiles.forEach((file, index) => {
+                const dishName = nameInputs[index].value.trim() || `Dish ${index + 1}`;
+                const dishPrice = priceInputs[index].value.trim() || '$0';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const dish = {
+                        id: Date.now() + index,
+                        name: dishName,
+                        price: dishPrice,
+                        image: e.target.result
+                    };
+                    dishes.push(dish);
+                    
+                    // Re-render when all files are processed
+                    if (index === window.bulkUploadFiles.length - 1) {
+                        renderDishes();
+                        renderScheduleGrid();
+                        modal.remove();
+                        delete window.bulkUploadFiles;
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function showDishForm() {
+            document.getElementById('dishForm').style.display = 'flex';
+            document.getElementById('dishName').focus();
+        }
+
+        function cancelDishForm() {
+            document.getElementById('dishForm').style.display = 'none';
+            document.getElementById('dishName').value = '';
+            document.getElementById('dishPrice').value = '';
+            currentImageFile = null;
+        }
+
+        function addDish() {
+            const dishName = document.getElementById('dishName').value.trim();
+            const dishPrice = document.getElementById('dishPrice').value.trim() || '$0';
+            if (!dishName || !currentImageFile) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dish = {
+                    id: Date.now(),
+                    name: dishName,
+                    price: dishPrice,
+                    image: e.target.result
+                };
+                dishes.push(dish);
+                renderDishes();
+                renderScheduleGrid();
+                cancelDishForm();
+            };
+            reader.readAsDataURL(currentImageFile);
+        }
+
+        function deleteDish(dishId) {
+            dishes = dishes.filter(dish => dish.id !== dishId);
+            // Remove from all days in schedule as well
+            days.forEach(day => {
+                schedule[day].dishes = schedule[day].dishes.filter(id => id !== dishId);
+            });
+            renderDishes();
+            renderScheduleGrid();
+            updatePreview();
+        }
+
+        function editDish(dishId) {
+            const dish = dishes.find(d => d.id === dishId);
+            if (!dish) return;
+
+            // Create edit modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+                align-items: center; justify-content: center; padding: 20px;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px; 
+                max-width: 400px; width: 100%;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            `;
+            
+            content.innerHTML = `
+                <h3 style="margin-bottom: 20px; color: #495057; text-align: center;">✏️ Edit Dish</h3>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="${dish.image}" alt="${dish.name}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 10px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Dish Name:</label>
+                    <input type="text" id="editDishName" value="${dish.name}" style="width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Price:</label>
+                    <input type="text" id="editDishPrice" value="${dish.price}" placeholder="e.g., $15" style="width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="saveEditedDish(${dish.id})" style="flex: 1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Save Changes</button>
+                    <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            // Focus on name input
+            setTimeout(() => document.getElementById('editDishName').focus(), 100);
+        }
+
+        function saveEditedDish(dishId) {
+            const dish = dishes.find(d => d.id === dishId);
+            if (!dish) return;
+
+            const newName = document.getElementById('editDishName').value.trim();
+            const newPrice = document.getElementById('editDishPrice').value.trim();
+
+            if (!newName) {
+                alert('Please enter a dish name');
+                return;
+            }
+
+            dish.name = newName;
+            dish.price = newPrice || '$0';
+
+            // Close modal
+            document.querySelector('[style*="position: fixed"]').remove();
+
+            // Re-render everything
+            renderDishes();
+            renderScheduleGrid();
+            updatePreview();
+        }
+
+        // Modified renderDishes to make items draggable
+        function renderDishes() {
+            const dishesGrid = document.getElementById('dishesGrid');
+            dishesGrid.innerHTML = '';
+
+            dishes.forEach(dish => {
+                const dishElement = document.createElement('div');
+                dishElement.className = 'dish-item';
+                dishElement.innerHTML = `
+                    <img src="${dish.image}" alt="${dish.name}">
+                    <div class="name">${dish.name}</div>
+                    <div class="price">${dish.price}</div>
+                    <div class="buttons">
+                        <button class="edit-btn" onclick="editDish(${dish.id})">Edit</button>
+                        <button class="delete-btn" onclick="deleteDish(${dish.id})">Delete</button>
+                    </div>
+                `;
+                
+                // Make draggable only if in drag-and-drop mode
+                if (isDragAndDropMode) {
+                    dishElement.setAttribute('draggable', true);
+                    dishElement.setAttribute('data-dish-id', dish.id); // Store dish ID
+                    dishElement.addEventListener('dragstart', handleDishDragStart);
+                } else {
+                    dishElement.removeAttribute('draggable');
+                    dishElement.removeAttribute('data-dish-id');
+                    dishElement.removeEventListener('dragstart', handleDishDragStart);
+                }
+                
+                dishesGrid.appendChild(dishElement);
+            });
+        }
+
+        function addDishToDay(day, dishId) {
+            if (!dishId || schedule[day].dishes.length >= 3) return; // Limit to 3 dishes
+            
+            dishId = parseInt(dishId);
+            if (!schedule[day].dishes.includes(dishId)) {
+                schedule[day].dishes.push(dishId);
+                renderScheduleGrid();
+                updatePreview();
+            }
+        }
+
+        function removeDishFromDay(day, dishId) {
+            schedule[day].dishes = schedule[day].dishes.filter(id => id !== dishId);
+            renderScheduleGrid();
+            updatePreview();
+        }
+
+        // Drag and Drop Handlers
+        let draggedDishId = null;
+
+        function handleDishDragStart(e) {
+            draggedDishId = e.target.closest('.dish-item').getAttribute('data-dish-id');
+            e.dataTransfer.setData('text/plain', draggedDishId);
+            e.dataTransfer.effectAllowed = 'copy';
+            e.target.style.opacity = '0.5'; // Visual feedback for dragging
+        }
+
+        function handleDayDragOver(e) {
+            e.preventDefault(); // Crucial to allow dropping
+            const dayCard = e.currentTarget;
+            const dayName = dayCard.getAttribute('data-day');
+            
+            if (schedule[dayName].status !== 'normal' || schedule[dayName].dishes.length >= 3) {
+                e.dataTransfer.dropEffect = 'none'; // Cannot drop here
+                dayCard.classList.add('no-drop');
+            } else {
+                e.dataTransfer.dropEffect = 'copy';
+                dayCard.classList.add('drag-over'); // Visual feedback for drop target
+                dayCard.classList.remove('no-drop');
+            }
+        }
+
+        function handleDayDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+            e.currentTarget.classList.remove('no-drop');
+        }
+
+        function handleDayDrop(e) {
+            e.preventDefault();
+            const dayCard = e.currentTarget;
+            const dayName = dayCard.getAttribute('data-day');
+            dayCard.classList.remove('drag-over');
+            dayCard.classList.remove('no-drop');
+
+            if (schedule[dayName].status !== 'normal' || schedule[dayName].dishes.length >= 3) {
+                // Not a valid drop target, do nothing
+                return;
+            }
+
+            const droppedDishId = parseInt(e.dataTransfer.getData('text/plain'));
+            if (droppedDishId && !schedule[dayName].dishes.includes(droppedDishId)) {
+                addDishToDay(dayName, droppedDishId);
+            }
+            
+            // Reset opacity of dragged item
+            if (draggedDishId) {
+                const draggedItem = document.querySelector(`.dish-item[data-dish-id="${draggedDishId}"]`);
+                if (draggedItem) {
+                    draggedItem.style.opacity = '1';
+                }
+            }
+            draggedDishId = null;
+        }
+
+        document.addEventListener('dragend', function(e) {
+            // This event fires on the original draggable element
+            if (draggedDishId) {
+                const draggedItem = document.querySelector(`.dish-item[data-dish-id="${draggedDishId}"]`);
+                if (draggedItem) {
+                    draggedItem.style.opacity = '1'; // Reset opacity if drag ends without drop or on invalid drop
+                }
+            }
+            draggedDishId = null;
+        });
+
+        function updatePreview() {
+            const previewContainer = document.getElementById('schedulePreview');
+            const businessName = document.getElementById('businessName').value || 'Your Catering Business';
+            const businessPhone = document.getElementById('businessPhone').value;
+            const businessAddress = document.getElementById('businessAddress').value;
+            const businessNotes = document.getElementById('businessNotes').value;
+
+            // Get current week dates
+            const today = new Date();
+            const monday = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            
+            const formatDate = (date) => {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            };
+
+            const weekDates = `${formatDate(monday)} - ${formatDate(sunday)}`;
+
+            let businessInfo = businessPhone;
+            if (businessAddress) businessInfo += ` • ${businessAddress}`;
+
+            const header = `
+                <div class="preview-header">
+                    <div class="preview-business-name">${businessName}</div>
+                    <div class="preview-business-info">${businessInfo}</div>
+                    <div class="preview-week-dates">Weekly Schedule: ${weekDates}</div>
+                    ${businessNotes ? `<div style="margin-top: 10px; font-style: italic;">${businessNotes}</div>` : ''}
+                </div>
+            `;
+
+            // The app is always in 'image' mode functionally, but still uses 'text' preview logic for table
+            // However, since Text Mode is visually removed, we default to image grid preview
+            const gridContent = `
+                <div class="preview-grid">
+                    ${days.map(day => {
+                        const dayData = schedule[day];
+                        let content = '';
+                        if (dayData.status === 'off') {
+                            content = '<div class="status-message">🚫 No Service</div>';
+                        } else if (dayData.status === 'tbd') {
+                            content = '<div class="status-message">❓ To Be Decided</div>';
+                        } else if (dayData.dishes.length === 0) {
+                            content = '<div class="status-message">📝 No dishes selected</div>';
+                        } else {
+                            content = `
+                                <div class="preview-dishes">
+                                    ${dayData.dishes.map(dishId => {
+                                        const dish = dishes.find(d => d.id === dishId);
+                                        return dish ? `
+                                            <div class="preview-dish">
+                                                <img src="${dish.image}" alt="${dish.name}">
+                                                <div class="preview-dish-content">
+                                                    <div class="preview-dish-name">${dish.name}</div>
+                                                    <div class="preview-dish-price">${dish.price}</div>
+                                                </div>
+                                            </div>
+                                        ` : '';
+                                    }).join('')}
+                                </div>
+                            `;
+                        }
+                        return `
+                            <div class="preview-day">
+                                <div class="preview-day-name">${day}</div>
+                                ${content}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            previewContainer.innerHTML = header + gridContent;
+        }
+
+        async function exportAsPNG() {
+            console.log('PNG export started...');
+            
+            // Check if html2canvas is available
+            if (typeof html2canvas === 'undefined') {
+                alert('Export feature not available in this environment. Please copy the code to use in a regular browser.');
+                return;
+            }
+            
+            const previewElement = document.getElementById('schedulePreview');
+            
+            // Add the class to force layout for export
+            previewElement.classList.add('force-export-layout');
+
+            // Give the browser a moment to apply the new styles and recalculate layout
+            await new Promise(resolve => setTimeout(resolve, 300)); // Increased timeout for stability
+
+            html2canvas(previewElement, {
+                backgroundColor: '#ffffff',
+                scale: 2, // Higher scale for better resolution
+                logging: true,
+                useCORS: true,
+                allowTaint: true,
+                width: previewElement.scrollWidth, // Use scrollWidth for full content
+                height: previewElement.scrollHeight // Use scrollHeight for full content
+            }).then(canvas => {
+                console.log('Canvas created successfully');
+                try {
+                    const link = document.createElement('a');
+                    const businessName = document.getElementById('businessName').value.replace(/[^a-zA-Z0-9]/g, '-') || 'catering-schedule';
+                    link.download = `${businessName}-weekly-schedule-${new Date().toISOString().split('T')[0]}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    
+                    // For environments that might block downloads, open in new tab
+                    if (link.href) {
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        console.log('PNG download initiated');
+                    }
+                } catch (downloadError) {
+                    console.error('Download failed, opening in new tab:', downloadError);
+                    // Fallback: open image in new tab
+                    const newTab = window.open();
+                    newTab.document.write(`<img src="${canvas.toDataURL()}" style="max-width: 100%;">`);
+                }
+            }).catch(error => {
+                console.error('Error generating PNG:', error);
+                alert('PNG export failed. This might be due to browser restrictions in this environment. Try using this in a regular browser or right-click the preview and "Save as image".');
+            }).finally(() => {
+                // Remove the class to revert to original layout
+                previewElement.classList.remove('force-export-layout');
+            });
+        }
+
+        async function exportAsPDF() {
+            console.log('PDF export started...');
+            
+            // Check if libraries are available
+            if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+                alert('Export feature not available in this environment. Please copy the code to use in a regular browser.');
+                return;
+            }
+            
+            const previewElement = document.getElementById('schedulePreview');
+            
+            // Add the class to force layout for export
+            previewElement.classList.add('force-export-layout');
+
+            // Give the browser a moment to apply the new styles and recalculate layout
+            await new Promise(resolve => setTimeout(resolve, 300)); // Increased timeout for stability
+
+            html2canvas(previewElement, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                logging: true,
+                useCORS: true,
+                allowTaint: true,
+                width: previewElement.scrollWidth,
+                height: previewElement.scrollHeight
+            }).then(canvas => {
+                console.log('Canvas created for PDF');
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({
+                        orientation: 'landscape',
+                        unit: 'mm',
+                        format: 'a4'
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = 280;
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    
+                    // Center the image if it's smaller than the page
+                    const x = (297 - imgWidth) / 2;
+                    const y = 10;
+                    
+                    pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+                    
+                    const businessName = document.getElementById('businessName').value.replace(/[^a-zA-Z0-9]/g, '-') || 'catering-schedule';
+                    pdf.save(`${businessName}-weekly-schedule-${new Date().toISOString().split('T')[0]}.pdf`);
+                    console.log('PDF download initiated');
+                } catch (pdfError) {
+                    console.error('PDF generation failed:', pdfError);
+                    alert('PDF export failed. This might be due to browser restrictions in this environment.');
+                }
+            }).catch(error => {
+                console.error('Error generating PDF:', error);
+                alert('PDF export failed. This might be due to browser restrictions in this environment. Try using this in a regular browser.');
+            }).finally(() => {
+                // Remove the class to revert to original layout
+                previewElement.classList.remove('force-export-layout');
+            });
+        }
+
+        function copyForSharing() {
+            console.log('Copy for sharing started...');
+            
+            const businessName = document.getElementById('businessName').value || 'Your Catering Business';
+            const businessPhone = document.getElementById('businessPhone').value;
+            
+            // Get current week dates
+            const today = new Date();
+            const monday = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            
+            const formatDate = (date) => {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            };
+
+            const weekDates = `${formatDate(monday)} - ${formatDate(sunday)}`;
+
+            let text = `🍽️ *${businessName}*\n`;
+            if (businessPhone) text += `📞 ${businessPhone}\n`;
+            text += `📅 *Weekly Schedule: ${weekDates}*\n\n`;
+
+            days.forEach(day => {
+                const dayData = schedule[day];
+                text += `*${day}:*\n`;
+                
+                if (dayData.status === 'off') {
+                    text += '🚫 No Service\n\n';
+                } else if (dayData.status === 'tbd') {
+                    text += '❓ To Be Decided\n\n';
+                } else if (dayData.text) { // No longer checks currentMode === 'text'
+                    text += `${dayData.text}\n\n`;
+                } else if (dayData.dishes.length > 0) {
+                    dayData.dishes.forEach(dishId => {
+                        const dish = dishes.find(d => d.id === dishId);
+                        if (dish) {
+                            text += `• ${dish.name} ${dish.price}\n`;
+                        }
+                    });
+                    text += '\n';
+                } else {
+                    text += 'No dishes available\n\n';
+                }
+            });
+
+            text += '---\n📱 Share this schedule with your friends!';
+            
+            console.log('Generated text:', text);
+
+            // Try modern clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log('Copied using clipboard API');
+                    showCopySuccess();
+                }).catch(error => {
+                    console.error('Clipboard API failed:', error);
+                    fallbackCopy(text);
+                });
+            } else {
+                console.log('Clipboard API not available, using fallback');
+                fallbackCopy(text);
+            }
+        }
+
+        function ensureWrappingMode() {
+            // Make sure we start in wrapping mode with correct styling and message
+            const scheduleGrid = document.querySelector('.schedule-grid');
+            const scheduleContainer = document.querySelector('.schedule-container');
+            const messageDiv = document.querySelector('.schedule-container').previousElementSibling;
+            
+            if (scheduleGrid && scheduleContainer && messageDiv) {
+                // Set wrapping mode styles
+                scheduleGrid.style.cssText = `
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 15px;
+                    margin-bottom: 30px;
+                    justify-content: center;
+                `;
+                scheduleContainer.style.cssText = `
+                    width: 100%;
+                    padding: 15px;
+                    background: #f8f9fa;
+                    border-radius: 10px;
+                    border: 2px solid #e9ecef;
+                `;
+                
+                // Set correct message
+                messageDiv.innerHTML = '✅ <strong>All 7 days are visible!</strong> Days will automatically arrange to fit your screen';
+                messageDiv.style.background = '#d4edda';
+                messageDiv.style.borderColor = '#c3e6cb';
+            }
+        }
+
+        function fallbackCopy(text) {
+            try {
+                // Fallback method
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.top = '0';
+                textArea.style.left = '0';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    console.log('Copied using fallback method');
+                    showCopySuccess();
+                } else {
+                    showTextModal(text);
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                showTextModal(text);
+            }
+        }
+
+        function showCopySuccess() {
+            alert('✅ Schedule copied to clipboard!\n\nYou can now paste it in:\n• WhatsApp\n• Facebook\n• Instagram\n• Text messages\n• Email\n\nThe text is formatted and ready to share!');
+        }
+
+        function showTextModal(text) {
+            // Create a modal to show the text for manual copying
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+                align-items: center; justify-content: center; padding: 20px;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px; 
+                max-width: 600px; max-height: 80%; overflow-y: auto;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            `;
+            
+            content.innerHTML = `
+                <h3 style="margin-bottom: 15px; color: #495057;">📱 Copy This Text for Sharing</h3>
+                <p style="margin-bottom: 15px; color: #6c757d;">Copy the text below and paste it into WhatsApp, Facebook, or any messaging app:</p>
+                <textarea readonly style="width: 100%; height: 300px; padding: 15px; border: 2px solid #dee2e6; border-radius: 8px; font-family: inherit; font-size: 14px;">${text}</textarea>
+                <div style="margin-top: 15px; text-align: center;">
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            // Select the text automatically
+            const textarea = content.querySelector('textarea');
+            textarea.select();
+            textarea.focus();
+            
+            console.log('Showing text modal for manual copying');
+        }
+
+        function debugExportIssues() {
+            console.log('=== EXPORT DEBUG INFO ===');
+            
+            const debugInfo = {
+                'html2canvas available': typeof html2canvas !== 'undefined',
+                'jsPDF available': typeof window.jspdf !== 'undefined',
+                'Clipboard API available': !!(navigator.clipboard && navigator.clipboard.writeText),
+                'execCommand available': document.queryCommandSupported && document.queryCommandSupported('copy'),
+                'User Agent': navigator.userAgent,
+                'Environment': window.location.href.includes('file://') ? 'Local File (file://)' : 'Web Server (http(s)://)'
+            };
+            
+            console.table(debugInfo);
+            
+            let debugText = '🔧 EXPORT DEBUG INFORMATION\n\n';
+            Object.entries(debugInfo).forEach(([key, value]) => {
+                debugText += `${key}: ${value}\n`;
+            });
+            
+            debugText += '\n📋 SOLUTIONS:\n';
+            debugText += 'The PNG/PDF export functions are designed for a web server environment (http:// or https://) due to browser security restrictions on accessing local files.\n\n';
+            debugText += 'To enable full functionality (especially exports):\n';
+            debugText += '1.  **Host the file online:** The easiest way is using free services like **GitHub Pages** (requires a GitHub account).\n    * Create a new public repository on GitHub.\n    * Upload this `catering_schedule.html` file to the repository.\n    * Go to your repository settings -> "Pages" and enable it for the main branch.\n    * Your app will then be available at a URL like `https://yourusername.github.io/your-repo-name/catering_schedule.html`.\n2.  **Access this new URL** from your iPhone browser.\n\n';
+            debugText += '💡 Alternatively, for immediate local use without hosting, you can still:\n';
+            debugText += '• Use the "Copy for WhatsApp/Social" button (text only).\n';
+            debugText += '• Take a screenshot of the "Professional Preview" section using your phone\'s built-in screenshot feature.\n';
+            debugText += '• Right-click (or long-press on mobile) the preview area and look for a "Save Image" or "Share Image" option (browser dependent).\n';
+            debugText += '\nThis app is designed to work fully in regular web browsers hosted on a server; some advanced functionalities are limited within a local `file://` environment due to security restrictions.';
+            
+            alert(debugText);
+            
+            // Also show in console
+            console.log(debugText);
+        }
+    </script>
+</body>
+</html>
