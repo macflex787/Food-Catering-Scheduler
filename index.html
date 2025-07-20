@@ -1,0 +1,2638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catering Weekly Schedule Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles & typography */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+            background: #ffffff; /* Reverted to white for the main app interface */
+            min-height: 100vh;
+            padding: 20px;
+            color: #333; /* Darker text for better contrast */
+            display: flex; /* Centering content vertically */
+            align-items: center; /* Centering content vertically */
+            justify-content: center; /* Centering content horizontally */
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #ffffff; /* Reverted to solid white */
+            border-radius: 24px; /* More rounded corners */
+            box-shadow: 0 25px 50px rgba(0,0,0,0.08); /* Reverted to softer, original shadow */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            /* backdrop-filter removed as it's not needed with solid background */
+        }
+
+        .header {
+            background: linear-gradient(135deg, #007bff, #0056b3); /* Reverted to primary blue gradient */
+            color: white;
+            padding: 40px; /* More padding */
+            text-align: center;
+            position: relative;
+            overflow: hidden; /* For subtle background patterns */
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100%" height="100%" fill="url(#dots)"/></svg>') repeat;
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .header h1 {
+            font-size: 2.8rem; /* Slightly larger */
+            margin-bottom: 12px;
+            font-weight: 800; /* Bolder */
+            letter-spacing: -0.5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2rem; /* Slightly larger */
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 40px; /* More space between sections */
+            padding: 40px;
+        }
+
+        .first-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* Retained grid for potential future use or broader layout */
+            gap: 40px;
+        }
+
+        .section {
+            background: #fdfdfd; /* Lighter background for sections */
+            border-radius: 18px; /* Slightly more rounded */
+            padding: 30px; /* More padding */
+            border: 1px solid #eef2f5; /* Subtle border */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.03); /* Lighter shadow */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.06);
+        }
+
+        .section h2 {
+            color: #2c3e50; /* Darker heading color */
+            margin-bottom: 25px; /* More space below heading */
+            font-size: 1.6rem; /* Larger */
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            border-bottom: 1px solid #f0f0f0; /* Subtle separator */
+            padding-bottom: 15px;
+        }
+
+        /* Icon improvements */
+        .business-info h2::before { content: "🏪"; font-size: 1.8rem; }
+        .week-settings h2::before { content: "📅"; font-size: 1.8rem; }
+        .dish-manager h2::before { content: "🍽️"; font-size: 1.8rem; }
+        .export-section h2::before { content: "📤"; font-size: 1.8rem; }
+        .preview-section h2::before { content: "👀"; font-size: 1.8rem; }
+        /* Adjusted for the new schedule editor heading - removed duplicate icon */
+        .schedule-editor h2 { 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-start; /* Changed from space-between to flex-start */
+            /* Removed flex-wrap: wrap to prevent text wrapping */
+        }
+        .schedule-editor h2::before { content: "🗓️"; font-size: 1.8rem; margin-right: 12px; }
+        
+        .schedule-editor h2 > span:first-child {
+            display: flex;
+            align-items: center;
+        }
+
+
+        /* Business Info Section */
+        .business-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px; /* More gap */
+        }
+
+        .business-form .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .business-form input, .business-form textarea {
+            padding: 14px; /* More padding */
+            border: 1px solid #dbe2e9; /* Lighter border */
+            border-radius: 10px; /* More rounded */
+            font-size: 1.05rem; /* Slightly larger font */
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: #f8fafd; /* Slight background tint */
+        }
+
+        .business-form input:focus, .business-form textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.2); /* Soft focus ring */
+            background: white;
+        }
+
+        .business-form textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        /* Week Settings Section */
+        .week-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .week-toggle {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8fafd;
+            border-radius: 10px;
+            border: 1px solid #dbe2e9;
+        }
+
+        .week-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .week-toggle-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #007bff;
+        }
+
+        .week-picker {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 15px;
+            background: #f8fafd;
+            border-radius: 10px;
+            border: 1px solid #dbe2e9;
+            transition: opacity 0.3s ease;
+        }
+
+        .week-picker.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .week-picker label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .week-date-input {
+            padding: 12px;
+            border: 1px solid #dbe2e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .week-date-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+        }
+
+        #currentWeekBtn {
+            align-self: flex-start;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Switch Styles for Drag & Drop Toggle */
+        .switch-container {
+            display: none; /* Hidden for testing purposes */
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #495057;
+            margin-left: auto;
+            margin-right: 60px; /* Push it more toward center */
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #007bff;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Dish Upload Section */
+        .upload-area {
+            border: 3px dashed #cdd8e4; /* More prominent dashed border */
+            background: #f8fafd; /* Lighter background */
+            border-radius: 15px;
+            padding: 35px; /* More padding */
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+            color: #6a7c8f;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .upload-area:hover {
+            border-color: #007bff;
+            background: #eef8ff;
+            color: #007bff;
+        }
+
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #e6f7e9;
+            color: #28a745;
+        }
+
+        .dish-form { /* REMOVED from HTML, now dynamically created for single dish add */
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .dish-form input {
+            padding: 14px;
+            border: 1px solid #dbe2e9;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: #f8fafd;
+        }
+
+        .dish-form input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+            background: white;
+        }
+
+        .btn {
+            padding: 14px 28px; /* More padding */
+            border: none;
+            border-radius: 10px; /* More rounded */
+            font-size: 1.05rem;
+            font-weight: 700; /* Bolder */
+            cursor: pointer;
+            transition: all 0.3s ease, transform 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            letter-spacing: 0.5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 18px rgba(0,123,255,0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            color: white;
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 6px 18px rgba(40,167,69,0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 6px 18px rgba(220,53,69,0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+            color: #333; /* Darker text for contrast */
+        }
+
+        .btn-warning:hover {
+            box-shadow: 0 6px 18px rgba(255,193,7,0.4);
+        }
+
+        .dishes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); /* Slightly larger min-width */
+            gap: 20px; /* More gap */
+            margin-top: 25px;
+        }
+
+        .dish-item {
+            background: white;
+            border-radius: 15px; /* More rounded */
+            padding: 15px; /* More padding */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08); /* Softer shadow */
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #eff3f7;
+            cursor: grab; /* Indicate draggable */
+            display: flex;
+            flex-direction: column;
+            height: 340px; /* Even more height for longest descriptions */
+            justify-content: space-between; /* Distribute content evenly */
+        }
+
+        .dish-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+        }
+
+        .dish-item img {
+            width: 100%;
+            height: 90px; /* Slightly taller */
+            object-fit: cover;
+            border-radius: 10px; /* More rounded */
+            margin-bottom: 10px;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .dish-item .name {
+            font-size: 0.95rem; /* Slightly larger */
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 15px; /* Even more margin */
+            word-wrap: break-word;
+            line-height: 1.3;
+            flex-grow: 1; /* Allow name to take available space */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px; /* Much more height for long descriptions */
+            padding: 8px 10px; /* More padding for better text wrapping */
+        }
+
+        .dish-item .price {
+            font-size: 0.85rem; /* Slightly larger */
+            color: #28a745;
+            font-weight: 700;
+            margin-bottom: 15px; /* Increased margin for better spacing */
+            flex-shrink: 0; /* Prevent shrinking */
+            padding-top: 8px; /* More top padding for separation */
+        }
+
+        .dish-item .buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: auto; /* Push buttons to bottom */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        
+        .dish-item .edit-btn {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+            color: #212529;
+            border: none;
+            padding: 8px 14px; /* More padding */
+            border-radius: 8px; /* More rounded */
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dish-item .edit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(255, 193, 7, 0.4);
+        }
+
+        .dish-item .delete-btn {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border: none;
+            padding: 8px 14px; /* More padding */
+            border-radius: 8px; /* More rounded */
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dish-item .delete-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(220, 53, 69, 0.4);
+        }
+
+        /* Schedule Grid */
+        /* Changed to flex for better wrapping on small screens */
+        .schedule-grid {
+            display: flex; /* Changed to flex */
+            flex-wrap: wrap; /* Allows wrapping */
+            gap: 15px;
+            margin-bottom: 30px;
+            overflow-x: hidden; /* Prevent horizontal scroll on this */
+            padding-bottom: 0; /* Remove padding if not scrolling */
+            justify-content: center; /* Center items when they wrap */
+        }
+
+        /* Ensure the schedule grid container allows horizontal scrolling when needed */
+        .schedule-container {
+            overflow-x: hidden; /* Changed to hidden */
+            margin: 0; /* Remove negative margin */
+            padding: 15px; /* Add padding to container itself */
+            border-radius: 10px;
+            background: #f8f9fa; /* Background for container */
+            border: 2px solid #e9ecef; /* Border for container */
+        }
+
+        /* Remove scrollbar styling as overflow-x is hidden now */
+        .schedule-container::-webkit-scrollbar {
+            height: 0px;
+        }
+
+        .schedule-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .schedule-container::-webkit-scrollbar-thumb {
+            background: transparent;
+        }
+
+        /* Ensure min-width is responsive now */
+        .day-card {
+            min-height: 200px; /* Ensure a base height for visual consistency */
+            flex: 1 1 calc(50% - 7.5px); /* Two columns on larger mobile, but flexible */
+            max-width: calc(50% - 7.5px); /* Max width for two columns (adjusting for gap) */
+            background: #fdfdfd; /* Lighter background for sections */
+            border-radius: 18px; /* More rounded */
+            padding: 30px; /* More padding */
+            border: 1px solid #eef2f5; /* Subtle border */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.03); /* Lighter shadow */
+            transition: transform 0 0.3s ease, box-shadow 0 0.3s ease;
+        }
+        .day-card:hover {
+            transform: translateY(-3px); /* Slightly less intense hover transform */
+            box-shadow: 0 8px 18px rgba(0,0,0,0.08); /* Softer shadow */
+        }
+
+
+        .day-header {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 700;
+            color: #495057;
+            font-size: 1.1rem;
+        }
+
+        .day-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1; /* Allows it to expand */
+        }
+
+        .day-status {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .status-btn {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #dee2e6;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .status-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        /* Text Mode Specific (removed from JS, keeping styles just in case for text input type) */
+        .text-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        /* Image Mode (Dropdown) Specific */
+        .dish-selector {
+            position: relative;
+        }
+
+        .dish-dropdown {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: white;
+            cursor: pointer;
+            appearance: none; /* Add this to remove default dropdown arrow */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007bff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.4H18.6c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.7c0%204.6%201.8%208.7%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.9%205.4s9.3-1.8%2012.9-5.4L287%2095.6c3.6-4.2%205.4-8.3%205.4-12.9%200-4.6-1.8-8.7-5.4-12.9z%22%2F%3E%3C%2Fsvg%3E'); /* Custom arrow */
+            background-repeat: no-repeat, repeat;
+            background-position: right .7em top 50%, 0 0;
+            background-size: .65em auto, 100%;
+        }
+
+        .dish-dropdown:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .selected-dishes {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1; /* Allow to expand */
+            justify-content: flex-start; /* Align selected dishes to top */
+        }
+
+        .selected-dish {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer; /* Indicate clickable to remove in DnD mode */
+        }
+
+        .selected-dish img {
+            width: 30px;
+            height: 30px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .selected-dish .remove-btn {
+            margin-left: auto;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* Export Section */
+        .export-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .export-buttons .btn {
+            text-align: center;
+        }
+
+        /* Preview Section */
+        .preview-section h2::before {
+            content: "👀";
+        }
+
+        .schedule-preview {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            min-width: unset; /* Remove min-width for responsiveness */
+            margin: 0 auto;
+            transition: min-width 0.3s ease, padding 0.3s ease;	
+            overflow-x: hidden;	
+        }
+
+        /* NEW: Base styles for Professional Preview to match export quality */
+        .preview-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 25px;
+            border-bottom: 3px solid #007bff;
+        }
+
+        .preview-business-name {
+            font-size: 2.2rem; /* Adjusted for consistency */
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 12px;
+        }
+
+        .preview-info-block { /* Container for phone and dates */
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .preview-business-info {
+            color: #6c757d;
+            font-size: 1.1rem; /* Adjusted for consistency */
+            display: block; /* Ensure it's on its own line */
+        }
+
+        .preview-week-dates {
+            font-size: 1.3rem; /* Adjusted for consistency */
+            color: #007bff;
+            font-weight: 600;
+            margin-top: 12px;
+            display: block; /* Ensure it's on its own line */
+        }
+
+        .preview-grid {
+            display: grid;
+            /* FIXED: Reduced minimum width from 180px to 140px for better fitting */
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+            gap: 20px; /* Adjusted gap */
+            margin-top: 25px;
+            align-items: stretch; /* Make sure all day columns stretch to the height of the tallest */
+            align-content: flex-start;
+            width: 100%; /* Ensure it takes full width of its container */
+            max-width: unset;
+            min-height: auto; /* Let it grow naturally for live preview */
+        }
+
+        .preview-day {
+            text-align: center;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            border: 1px solid #eee; /* Consistent border */
+            border-radius: 12px; /* Consistent radius */
+            padding: 15px; /* Consistent padding */
+            background: #ffffff; /* Explicit background */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); /* Light shadow */
+            height: 100%; /* Fill parent height (due to align-items: stretch on grid) */
+        }
+
+        .preview-day-name {
+            font-weight: 700;
+            color: white;
+            margin-bottom: 18px; /* Adjusted margin */
+            font-size: 1rem; /* Adjusted for consistency */
+            padding: 12px 8px; /* Adjusted padding */
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 8px;
+            word-wrap: break-word;
+            line-height: 1.2;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .preview-dishes {
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* Consistent gap */
+            min-height: auto; /* Let it naturally determine height in live preview */
+            flex-grow: 1;
+            justify-content: flex-start;
+            padding-top: 5px; /* Small padding from day name */
+        }
+
+        .preview-dish {
+            height: 280px; /* **INCREASED from 220px for longer dish names:** Fixed height for each dish card */
+            padding: 15px; /* Consistent padding */
+            border-radius: 12px; /* Consistent radius */
+            border: 2px solid #e0e6ec; /* Consistent border */
+            transition: transform 0 0.3s ease;
+            box-shadow: 0 5px 12px rgba(0,0,0,0.05); /* Consistent shadow */
+            flex-shrink: 0; /* Prevent shrinking */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Align content to top */
+            align-items: center; /* Center horizontally */
+            overflow: hidden; /* Hide anything that overflows the fixed height */
+        }
+        .preview-dish:hover {
+            transform: scale(1.02);
+        }
+
+        .preview-dish img {
+            width: auto; /* Adjusts width based on height to maintain aspect ratio */
+            height: 80px; /* Fixed height for image */
+            max-width: 90%; /* Ensure image doesn't overflow horizontally */
+            object-fit: contain; /* **CRITICAL:** Ensure image is not cropped and fits fully */
+            border-radius: 8px;
+            margin-bottom: 8px; /* Adjusted margin */
+            flex-shrink: 0;
+        }
+
+        .preview-dish-content {
+            flex-grow: 1; /* Allow content to take remaining space */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Align text to top of its container */
+            align-items: center; /* Center text horizontally */
+            width: 100%;
+            padding: 0 5px; /* Small horizontal padding for text */
+        }
+
+        .preview-dish-name {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.95rem; /* Adjusted for better fit within fixed height */
+            margin-bottom: 5px; /* Adjusted margin */
+            line-height: 1.2; /* Adjusted for tighter line spacing */
+            word-wrap: break-word; /* Ensure words wrap */
+            hyphens: auto; /* Enable hyphenation */
+            text-align: center;
+            white-space: normal; /* Allow text to wrap naturally */
+            flex-grow: 1; /* Allow name to take more space if needed */
+        }
+
+        .preview-dish-price {
+            color: #28a745;
+            font-weight: 700;
+            font-size: 1.1rem; /* Adjusted for consistency */
+            margin-top: auto; /* Push price to the bottom if content above is shorter */
+            flex-shrink: 0;
+        }
+
+        .status-message {
+            padding: 20px; /* Adjusted padding */
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px dashed #dee2e6; /* Consistent dashed border */
+            min-height: 260px; /* INCREASED from 200px to match new dish card height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.0rem; /* Adjusted font size */
+            flex-grow: 1;
+        }
+
+
+/* --- ENHANCED EXPORT-SPECIFIC OVERRIDES (Modern & Stylish Design) --- */
+        .schedule-preview.force-export-layout {
+            min-width: 1600px !important;
+            overflow-x: visible !important;
+            padding: 60px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            /* CREAM-BEIGE GRADIENT: Elegant warm tones */
+            background: linear-gradient(135deg, #f7e6d3 0%, #e8d5b7 30%, #ddbf94 70%, #d4af7a 100%) !important;
+            position: relative !important;
+        }
+
+        /* Add subtle pattern overlay for depth */
+        .schedule-preview.force-export-layout::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(139,69,19,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(160,82,45,0.06) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(101,67,33,0.04) 0%, transparent 50%) !important;
+            pointer-events: none !important;
+            z-index: 1 !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-header {
+            margin-bottom: 50px !important;
+            padding-bottom: 30px !important;
+            text-align: center !important;
+            position: relative !important;
+            z-index: 2 !important;
+            /* Modern glass effect */
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-radius: 25px !important;
+            padding: 40px 50px !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-business-name {
+            font-size: 3.2rem !important;
+            color: #8b4513 !important;
+            margin-bottom: 15px !important;
+            font-weight: 800 !important;
+            letter-spacing: -1px !important;
+            text-shadow: 0 2px 4px rgba(139, 69, 19, 0.2) !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-info-block {
+            text-align: center !important;
+            margin-top: 15px !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-business-info {
+            font-size: 1.4rem !important;
+            display: block !important;
+            color: #654321 !important;
+            font-weight: 500 !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-week-dates {
+            font-size: 1.8rem !important;
+            margin-top: 20px !important;
+            display: block !important;
+            color: #a0522d !important;
+            font-weight: 700 !important;
+            text-shadow: 0 1px 2px rgba(160, 82, 45, 0.2) !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-grid {
+            grid-template-columns: repeat(7, 1fr) !important;
+            gap: 8px !important; /* Tight gaps for seamless look */
+            margin-top: 40px !important;
+            min-height: 1000px !important; /* INCREASED from 905px to accommodate taller dish cards */
+            align-items: stretch !important;
+            align-content: flex-start !important;
+            width: 100% !important;
+            max-width: unset !important;
+            border-radius: 20px !important;
+            overflow: hidden !important;
+            box-shadow: 
+                0 30px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+            position: relative !important;
+            z-index: 2 !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-day {
+            padding: 20px 15px !important;
+            /* Modern glass morphism effect */
+            background: rgba(255, 255, 255, 0.92) !important;
+            backdrop-filter: blur(10px) !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+            position: relative !important;
+        }
+
+        /* Remove border from last day */
+        .schedule-preview.force-export-layout .preview-day:last-child {
+            border-right: none !important;
+        }
+
+        /* Add subtle gradient overlay to each day */
+        .schedule-preview.force-export-layout .preview-day::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: linear-gradient(180deg, 
+                rgba(255, 255, 255, 0.1) 0%, 
+                transparent 50%, 
+                rgba(0, 0, 0, 0.02) 100%) !important;
+            pointer-events: none !important;
+            z-index: 1 !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-day-name {
+            font-size: 1.3rem !important;
+            padding: 18px 12px !important;
+            min-height: 65px !important;
+            border-radius: 15px !important;
+            margin-bottom: 20px !important;
+            /* Modern minimalist design with dark background */
+            background: #2d3748 !important;
+            color: #ffffff !important;
+            box-shadow: 
+                0 4px 12px rgba(45, 55, 72, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+            position: relative !important;
+            z-index: 2 !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.5px !important;
+            text-transform: uppercase !important;
+            font-size: 1.1rem !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-dishes {
+            gap: 18px !important;
+            padding-top: 0 !important;
+            position: relative !important;
+            z-index: 2 !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-dish {
+            height: 340px !important; /* INCREASED from 290px for longer dish names */
+            padding: 25px 20px !important;
+            border-radius: 18px !important;
+            /* Modern card design */
+            background: rgba(255, 255, 255, 0.98) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 
+                0 15px 35px rgba(0, 0, 0, 0.1),
+                0 5px 15px rgba(0, 0, 0, 0.08),
+                0 0 0 1px rgba(255, 255, 255, 0.3) inset !important;
+            backdrop-filter: blur(10px) !important;
+            justify-content: space-between !important;
+            transition: transform 0.3s ease !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+        /* Add subtle shimmer effect */
+        .schedule-preview.force-export-layout .preview-dish::before {
+            content: '' !important;
+            position: absolute !important;
+            top: -2px !important;
+            left: -2px !important;
+            width: calc(100% + 4px) !important;
+            height: calc(100% + 4px) !important;
+            background: linear-gradient(45deg, 
+                transparent 30%, 
+                rgba(255, 255, 255, 0.1) 50%, 
+                transparent 70%) !important;
+            border-radius: 18px !important;
+            z-index: -1 !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-dish img {
+            height: 95px !important;
+            margin-bottom: 15px !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-dish-name {
+            font-size: 1.1rem !important;
+            line-height: 1.4 !important;
+            margin-bottom: 10px !important;
+            font-weight: 600 !important;
+            color: #2d3748 !important;
+        }
+
+        .schedule-preview.force-export-layout .preview-dish-price {
+            font-size: 1.25rem !important;
+            margin-top: auto !important;
+            font-weight: 800 !important;
+            color: #2f855a !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .schedule-preview.force-export-layout .status-message {
+            min-height: 360px !important; /* INCREASED from 310px to match new dish card height */
+            background: rgba(255, 255, 255, 0.8) !important;
+            border: 2px dashed rgba(255, 255, 255, 0.4) !important;
+            box-shadow: none !important;
+            padding: 30px 8px !important;
+            border-radius: 15px !important;
+            text-align: center !important;
+            color: #718096 !important;
+            font-style: italic !important;
+            font-size: 0.85rem !important;
+            font-weight: 400 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-grow: 1 !important;
+            flex-shrink: 0 !important;
+            margin-top: 0 !important;
+            backdrop-filter: blur(5px) !important;
+            position: relative !important;
+            z-index: 2 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            line-height: 1.2 !important;
+            letter-spacing: normal !important;
+        }
+
+
+        /* --- MOBILE RESPONSIVENESS (UNCHANGED from previous version for viewing on phone) --- */
+        @media (max-width: 1024px) {
+            body {
+                padding: 15px;
+            }
+
+            .container {
+                border-radius: 18px;
+                box-shadow: 0 15px 30px rgba(0,0,0,0.06);
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2.2rem;
+            }
+
+            .header p {
+                font-size: 1.05rem;
+            }
+
+            .main-content {
+                padding: 30px 20px;
+                gap: 30px;
+            }
+
+            .first-row {
+                grid-template-columns: 1fr;	
+                gap: 30px;
+            }
+
+            .section {
+                padding: 25px;
+                border-radius: 15px;
+            }
+
+            .section h2 {
+                font-size: 1.4rem;
+                margin-bottom: 20px;
+                padding-bottom: 12px;
+            }
+
+            .business-form {
+                grid-template-columns: 1fr;	
+            }
+
+            .week-form {
+                gap: 15px;
+            }
+
+            .week-picker {
+                padding: 12px;
+            }
+
+            #currentWeekBtn {
+                font-size: 0.85rem;
+                padding: 8px 16px;
+            }
+
+            .dish-manager .upload-area {
+                padding: 25px;
+                font-size: 1rem;
+            }
+
+            .dishes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));	
+                gap: 15px;
+            }
+
+            .dish-item img {
+                height: 80px;
+            }
+
+            .dish-item .name {
+                font-size: 0.9rem;
+            }
+
+            .dish-item .price {
+                font-size: 0.8rem;
+            }
+
+            .dish-item .edit-btn, .dish-item .delete-btn {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+
+            .schedule-editor h2 {
+                /* Removed the responsive flex-direction change to keep text inline */
+                font-size: 1.4rem;
+                margin-bottom: 20px;
+                padding-bottom: 12px;
+            }
+
+            .switch-container {
+                margin-top: 5px;	
+                width: 100%;	
+                justify-content: center;	
+                font-size: 0.95rem;	
+            }
+
+            .day-card {
+                flex: 1 1 calc(50% - 7.5px);	
+                max-width: calc(50% - 7.5px);
+                padding: 20px;
+            }
+            .schedule-grid {
+                gap: 15px;
+            }
+
+            /* Preview Section on Mobile (responsive grid behavior for preview) */
+            .schedule-preview {
+                padding: 25px;
+            }
+
+            .preview-header {
+                margin-bottom: 30px;
+                padding-bottom: 15px;
+            }
+
+            .preview-business-name {
+                font-size: 1.8rem;
+            }
+            .preview-business-info {
+                font-size: 1rem;
+            }
+            .preview-week-dates {
+                font-size: 1.1rem;
+            }
+
+            .preview-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));	
+                gap: 15px;
+            }
+            .preview-day-name {
+                font-size: 0.95rem;
+                padding: 10px 6px;
+                min-height: 40px;
+            }
+            .preview-dish {
+                padding: 10px;	
+                height: 240px;	/* INCREASED from 200px for longer dish names */
+            }
+            .preview-dish img {
+                height: 70px;	
+                margin-bottom: 6px;
+            }
+            .preview-dish-name {
+                font-size: 0.85rem;	
+                line-height: 1.1;
+                margin-bottom: 4px;
+            }
+            .preview-dish-price {
+                font-size: 0.9rem;	
+            }
+            .status-message {
+                min-height: 220px;	/* INCREASED from 180px to match mobile dish cards */
+                font-size: 0.9rem;
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .day-card {
+                flex: 1 1 calc(50% - 7.5px);	
+                max-width: calc(50% - 7.5px);
+            }
+            .schedule-grid {
+                justify-content: center;	
+            }
+            .export-buttons {
+                grid-template-columns: 1fr;	
+            }
+
+            /* Preview grid on smaller tablets/large phones */
+            .preview-grid {
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));	
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                border-radius: 15px;
+            }
+            .header {
+                padding: 25px 15px;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .header p {
+                font-size: 0.9rem;
+            }
+            .main-content {
+                padding: 25px 15px;
+                gap: 25px;
+            }
+            .section {
+                padding: 20px;
+                border-radius: 12px;
+            }
+            .section h2 {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+            }
+            .dish-form input {
+                padding: 12px;
+                font-size: 1rem;
+            }
+            .btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+
+            .week-toggle-label {
+                font-size: 0.9rem;
+            }
+
+            .week-picker label {
+                font-size: 0.9rem;
+            }
+
+            .week-date-input {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+            .dishes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));	
+                gap: 10px;
+            }
+            .dish-item {
+                padding: 10px;
+                height: 320px; /* Much more height for mobile */
+            }
+            .dish-item img {
+                height: 70px;
+            }
+            .dish-item .name {
+                font-size: 0.85rem;
+                min-height: 90px; /* Much more space for mobile */
+                line-height: 1.2; /* Tighter line height for mobile */
+                padding: 5px 8px; /* Better padding for mobile */
+                margin-bottom: 12px; /* More margin for mobile */
+            }
+            .dish-item .price {
+                font-size: 0.75rem;
+                margin-bottom: 12px; /* Increased for mobile */
+                padding-top: 6px; /* More separation on mobile */
+            }
+            .dish-item .edit-btn, .dish-item .delete-btn {
+                padding: 5px 8px;
+                font-size: 0.7rem;
+            }
+            
+            .schedule-editor h2 {
+                /* Removed responsive layout changes to keep text inline with icon */
+                align-items: center;	
+            }
+
+            .day-card {
+                flex: 1 1 100%;	
+                max-width: 100%;
+                padding: 15px;
+            }
+            .schedule-grid {
+                gap: 15px;	
+            }
+
+            .preview-grid {
+                grid-template-columns: 1fr;	
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ Catering Weekly Schedule Generator</h1>
+            <p>Create professional weekly catering schedules in minutes</p>
+        </div>
+
+        <div class="main-content">
+            <div class="first-row">
+                <div class="section business-info" style="grid-column: 1 / -1;"> <h2>Business Information</h2>
+                    <div class="business-form">
+                        <input type="text" id="businessName" placeholder="Business Name" value="Fresh Pastry, Food & Catering">
+                        <input type="text" id="businessPhone" placeholder="Phone Number" value="( Delivery to LSU Campus - $3 )">
+                        <textarea id="businessAddress" placeholder="Address (optional)" class="full-width"></textarea>
+                        <textarea id="businessNotes" placeholder="Additional Notes (optional)" class="full-width"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section week-settings">
+                <h2>Week Schedule Settings</h2>
+                <div class="week-form">
+                    <div class="week-toggle">
+                        <label class="week-toggle-label">
+                            <input type="checkbox" id="showWeekDates" checked>
+                            <span class="week-toggle-text">Show week dates in schedule</span>
+                        </label>
+                    </div>
+                    <div class="week-picker" id="weekPickerContainer">
+                        <label for="weekStartDate">Select week starting Monday:</label>
+                        <input type="date" id="weekStartDate" class="week-date-input">
+                        <button class="btn btn-primary" id="currentWeekBtn">Use Current Week</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section dish-manager" id="dishManagerSection"> <h2>Dish Manager</h2>
+                <div class="upload-area" id="uploadArea">
+                    <p>📸 Click or drag & drop dish images here</p>
+                    <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                </div>
+                <div class="dish-form" id="dishForm" style="display: none;">
+                    <input type="text" id="dishName" placeholder="Dish name">
+                    <input type="text" id="dishPrice" placeholder="Price (e.g., $15)">
+                    <button class="btn btn-primary" id="addDishBtn">Add Dish</button>
+                    <button class="btn btn-danger" id="cancelBtn">Cancel</button>
+                </div>
+                <div class="dishes-grid" id="dishesGrid"></div>
+            </div>
+
+            <div class="section schedule-editor">
+                <h2>
+                    <span>Weekly Schedule Editor</span>
+                    <div class="switch-container">
+                        <span>Dropdown Mode</span>
+                        <label class="switch">
+                            <input type="checkbox" id="dragDropToggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>Drag & Drop Mode</span>
+                    </div>
+                </h2>
+                <div style="margin-bottom: 15px; padding: 10px; background: #d4edda; border: 2px solid #c3e6cb; border-radius: 8px; font-size: 0.9rem; text-align: center;">
+                    ✅ <strong>All 7 days are visible!</strong> Days will automatically arrange to fit your screen
+                </div>
+                <div class="schedule-container">
+                    <div class="schedule-grid" id="scheduleGrid"></div>
+                </div>
+            </div>
+
+            <div class="section preview-section">
+                <h2>Professional Preview</h2>
+                <div class="schedule-preview" id="schedulePreview">
+                    </div>
+            </div>
+
+            <div class="section export-section">
+                <h2>Export Schedule</h2>
+                <div class="export-buttons">
+                    <button class="btn btn-success" id="exportPngBtn">📸 Export PNG</button>
+                    <button class="btn btn-danger" id="exportPdfBtn">📄 Export PDF</button>
+                </div>
+                <button class="btn btn-warning" id="shareBtn" style="width: 100%; margin-bottom: 15px;">📱 Copy for WhatsApp/Social</button>
+                <button class="btn btn-primary" id="debugBtn" style="width: 100%; font-size: 0.9rem;">🔧 Debug Export Issues</button>
+                
+                <div style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 8px; font-size: 0.9rem;">
+                    <strong>💡 Alternative Methods:</strong><br>
+                    • Right-click the preview → "Save as image"<br>
+                    • Take a screenshot of the preview<br>
+                    • Copy this code to use in a regular browser
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App state
+        let dishes = [];
+        let schedule = {};
+        let currentImageFile = null; // Stored for single dish upload
+        let isDragAndDropMode = false; // New state for the switch
+
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+        // Helper function to format price with $ sign
+        function formatPriceForDisplay(priceString) {
+            let cleanedPrice = String(priceString).trim();	
+            if (cleanedPrice.startsWith('$')) {
+                cleanedPrice = cleanedPrice.substring(1);
+            }
+
+            if (!isNaN(parseFloat(cleanedPrice)) && isFinite(parseFloat(cleanedPrice))) {
+                return `$${parseFloat(cleanedPrice).toFixed(0)}`;	
+            }
+            return cleanedPrice; // Return cleaned string if not a number
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSchedule();
+            initializeWeekSettings();
+            setupEventListeners();
+            renderScheduleGrid();	
+            renderDishes();	
+            updatePreview();
+            
+            ensureWrappingMode();
+        });
+
+        function initializeSchedule() {
+            days.forEach(day => {
+                schedule[day] = {
+                    status: 'normal',	
+                    dishes: [],	
+                    text: ''	
+                };
+            });
+        }
+
+        function initializeWeekSettings() {
+            // Set current week as default
+            setCurrentWeek();
+            // Ensure preview updates with the initialized week
+            updatePreview();
+        }
+
+        function handleWeekToggle() {
+            const showWeekDates = document.getElementById('showWeekDates').checked;
+            const weekPickerContainer = document.getElementById('weekPickerContainer');
+            
+            if (showWeekDates) {
+                weekPickerContainer.classList.remove('disabled');
+            } else {
+                weekPickerContainer.classList.add('disabled');
+            }
+            
+            // Immediately update preview when toggle changes
+            updatePreview();
+        }
+
+        function setCurrentWeek() {
+            const today = new Date();
+            // Calculate Monday of current week
+            const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + daysToMonday);
+            
+            const weekStartDate = document.getElementById('weekStartDate');
+            // Format as YYYY-MM-DD for the date input
+            const year = monday.getFullYear();
+            const month = String(monday.getMonth() + 1).padStart(2, '0');
+            const day = String(monday.getDate()).padStart(2, '0');
+            weekStartDate.value = `${year}-${month}-${day}`;
+            
+            updatePreview();
+        }
+
+        function getWeekDates() {
+            const showWeekDates = document.getElementById('showWeekDates').checked;
+            if (!showWeekDates) {
+                return null; // Don't show week dates
+            }
+
+            const weekStartInput = document.getElementById('weekStartDate').value;
+            if (!weekStartInput) {
+                // Fallback to current week if no date selected
+                const today = new Date();
+                const monday = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                return { monday, sunday };
+            }
+
+            // Parse the selected date properly
+            const selectedDate = new Date(weekStartInput + 'T00:00:00'); // Add time to avoid timezone issues
+            const monday = new Date(selectedDate);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            return { monday, sunday };
+        }
+
+        function setupEventListeners() {
+            document.getElementById('businessName').addEventListener('input', updatePreview);
+            document.getElementById('businessPhone').addEventListener('input', updatePreview);
+            document.getElementById('businessAddress').addEventListener('input', updatePreview);
+            document.getElementById('businessNotes').addEventListener('input', updatePreview);
+
+            // Week settings listeners
+            document.getElementById('showWeekDates').addEventListener('change', handleWeekToggle);
+            document.getElementById('weekStartDate').addEventListener('change', updatePreview);
+            document.getElementById('currentWeekBtn').addEventListener('click', setCurrentWeek);
+
+            const uploadArea = document.getElementById('uploadArea');
+            const imageInput = document.getElementById('imageInput');
+            // addDishBtn and cancelBtn are now handled dynamically in showDishForm
+            // Their original static HTML elements are no longer used for dynamic forms.
+            // Keeping references only if we decide to toggle back to non-modal for single dish.
+
+            uploadArea.addEventListener('click', () => imageInput.click());
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('drop', handleDrop);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+
+            imageInput.addEventListener('change', handleImageSelect);
+            
+            document.getElementById('dragDropToggle').addEventListener('change', function() {
+                isDragAndDropMode = this.checked;
+                renderScheduleGrid();	
+                updatePreview();
+                renderDishes();	
+            });
+
+            document.getElementById('exportPngBtn').addEventListener('click', exportAsPNG);
+            document.getElementById('exportPdfBtn').addEventListener('click', exportAsPDF);
+            document.getElementById('shareBtn').addEventListener('click', copyForSharing);
+            document.getElementById('debugBtn').addEventListener('click', debugExportIssues);
+
+            // The keypress listener for dishName is now attached to the dynamically created input within the modal
+        }
+
+        function renderScheduleGrid() {
+            const scheduleGrid = document.getElementById('scheduleGrid');
+            scheduleGrid.innerHTML = '';
+
+            days.forEach(day => {
+                const dayCard = document.createElement('div');
+                dayCard.className = 'day-card';	
+                
+                if (isDragAndDropMode) {
+                    dayCard.setAttribute('data-day', day);	
+                    dayCard.addEventListener('dragover', handleDayDragOver);
+                    dayCard.addEventListener('dragleave', handleDayDragLeave);
+                    dayCard.addEventListener('drop', handleDayDrop);
+                } else {
+                    dayCard.removeEventListener('dragover', handleDayDragOver);
+                    dayCard.removeEventListener('dragleave', handleDayDragLeave);
+                    dayCard.removeEventListener('drop', handleDayDrop);
+                }
+
+                const statusButtons = `
+                    <div class="day-status">
+                        <button class="status-btn ${schedule[day].status === 'normal' ? 'active' : ''}"	
+                                onclick="setDayStatus('${day}', 'normal')">Normal</button>
+                        <button class="status-btn ${schedule[day].status === 'off' ? 'active' : ''}"	
+                                onclick="setDayStatus('${day}', 'off')">Off</button>
+                        <button class="status-btn ${schedule[day].status === 'tbd' ? 'active' : ''}"	
+                                onclick="setDayStatus('${day}', 'tbd')">TBD</button>
+                    </div>
+                `;
+
+                let dayContent = '';
+                if (schedule[day].status === 'normal') {
+                    if (!isDragAndDropMode) {	
+                        dayContent = `
+                            <div class="dish-selector">
+                                <select class="dish-dropdown" onchange="addDishToDay('${day}', this.value)">
+                                    <option value="">Select a dish...</option>
+                                    ${[...dishes].sort((a, b) => a.name.localeCompare(b.name)).map(dish => `<option value="${dish.id}">${dish.name} - ${dish.price}</option>`).join('')}
+                                </select>
+                            </div>
+                        `;
+                    }
+                    dayContent += `
+                        <div class="selected-dishes">
+                            ${schedule[day].dishes.map(dishId => {
+                                const dish = dishes.find(d => d.id === dishId);
+                                return dish ? `
+                                    <div class="selected-dish" onclick="removeDishFromDay('${day}', ${dishId})"> <img src="${dish.image}" alt="${dish.name}">
+                                        <span>${dish.name}</span>
+                                        <span class="price">${dish.price}</span>
+                                        ${!isDragAndDropMode ? `<button class="remove-btn" onclick="event.stopPropagation(); removeDishFromDay('${day}', ${dishId})">×</button>` : ''}
+                                    </div>
+                                ` : '';
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
+                dayCard.innerHTML = `
+                    <div class="day-header">${day}</div>
+                    <div class="day-options">
+                        ${statusButtons}
+                        ${dayContent}
+                    </div>
+                `;
+
+                scheduleGrid.appendChild(dayCard);
+            });
+        }
+
+        function setDayStatus(day, status) {
+            schedule[day].status = status;
+            if (status !== 'normal') {
+                schedule[day].dishes = [];
+            }
+            renderScheduleGrid();
+            updatePreview();
+        }
+
+        // Image mode functions
+        function handleDragOver(e) {
+            console.log('Drag over initiated.');
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            console.log('Drag leave initiated.');
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            console.log('Drop initiated.');
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+            console.log('Files captured from drop:', files);
+            if (files.length === 1) {	
+                console.log('Single file detected from drop. Attempting to show single dish form modal.');
+                currentImageFile = files[0];
+                showDishForm(); // Now calls the modal version of showDishForm
+            } else if (files.length > 1) {	
+                console.log('Multiple files detected from selection. Attempting to show bulk upload interface.');
+                showBulkUploadInterface(files);
+            }
+        }
+
+        function handleImageSelect(e) {
+            console.log('Image selection initiated.');
+            const files = Array.from(e.target.files);
+            console.log('Files captured from selection:', files);
+            if (files.length === 1) {	
+                console.log('Single file detected from selection. Attempting to show single dish form modal.');
+                currentImageFile = files[0];
+                showDishForm(); // Now calls the modal version of showDishForm
+            } else if (files.length > 1) {	
+                console.log('Multiple files detected from selection. Attempting to show bulk upload interface.');
+                showBulkUploadInterface(files);
+            }
+        }
+
+        function showBulkUploadInterface(files) {
+            console.log('Entering showBulkUploadInterface().');
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;	
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex;	
+                align-items: center; justify-content: center; padding: 20px;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px;	
+                max-width: 600px; max-height: 80%; overflow-y: auto; width: 100%;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            `;
+            
+            // Build the file inputs portion dynamically
+            const fileInputsContainer = document.createElement('div');
+            files.forEach((file, index) => {
+                const dishName = file.name.split('.')[0].replace(/[_-]/g, ' ');
+
+                const fileInputDiv = document.createElement('div');
+                fileInputDiv.style.cssText = `display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 15px; border: 2px solid #e9ecef; border-radius: 10px;`;
+                
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.alt = dishName;
+                img.style.cssText = `width: 60px; height: 60px; object-fit: cover; border-radius: 8px;`;
+                fileInputDiv.appendChild(img);
+
+                const inputContainer = document.createElement('div');
+                inputContainer.style.cssText = `flex: 1;`;
+
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.className = 'bulk-dish-name';
+                nameInput.value = dishName;
+                nameInput.placeholder = 'Dish name';
+                nameInput.style.cssText = `width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 8px;`;
+                inputContainer.appendChild(nameInput);
+
+                const priceInput = document.createElement('input');
+                priceInput.type = 'text';
+                priceInput.className = 'bulk-dish-price';
+                priceInput.placeholder = 'Price (e.g., $15)';
+                priceInput.style.cssText = `width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 6px;`;
+                inputContainer.appendChild(priceInput);
+
+                fileInputDiv.appendChild(inputContainer);
+                fileInputsContainer.appendChild(fileInputDiv);
+            });
+
+            // Build buttons dynamically
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `display: flex; gap: 10px; margin-top: 20px;`;
+
+            const addAllBtn = document.createElement('button');
+            addAllBtn.textContent = 'Add All Dishes';
+            addAllBtn.style.cssText = `flex: 1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;`;
+            // Pass the original files array AND the modal element to saveBulkUpload
+            addAllBtn.addEventListener('click', () => saveBulkUpload(files, modal));	
+            buttonContainer.appendChild(addAllBtn);
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.cssText = `flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;`;
+            cancelBtn.addEventListener('click', () => modal.remove()); // Uses closure to access 'modal'
+            buttonContainer.appendChild(cancelBtn);
+
+
+            // Assemble content div
+            content.appendChild(Object.assign(document.createElement('h3'), { textContent: `📸 Bulk Upload - ${files.length} Dishes`, style: `margin-bottom: 20px; color: #495057; text-align: center;` }));
+            content.appendChild(Object.assign(document.createElement('p'), { textContent: `Review and edit the dish names and prices below:`, style: `margin-bottom: 20px; color: #6c757d; text-align: center;` }));
+            content.appendChild(fileInputsContainer);
+            content.appendChild(buttonContainer);
+            
+            modal.id = 'bulkUploadModal';	
+            modal.appendChild(content);	
+            document.body.appendChild(modal); // Append modal to body
+            console.log('Bulk upload modal displayed.');
+        }
+
+        async function saveBulkUpload(filesToProcess, modalElement) { // Accept filesToProcess and modalElement
+            console.log('Entering saveBulkUpload(). Files to process:', filesToProcess);
+            if (!filesToProcess || filesToProcess.length === 0) {
+                console.error("No files to process in saveBulkUpload. This should not happen if called correctly.");
+                modalElement.remove();
+                return;
+            }
+
+            const nameInputs = modalElement.querySelectorAll('.bulk-dish-name');
+            const priceInputs = modalElement.querySelectorAll('.bulk-dish-price');
+            
+            const promises = filesToProcess.map((file, index) => {
+                return new Promise((resolve) => {
+                    // Ensure nameInput and priceInput exist for the current index
+                    // This catches cases where the 'filesToProcess' array might be longer than inputs if something went wrong
+                    if (!nameInputs[index] || !priceInputs[index]) {
+                        console.warn(`Missing inputs for file index ${index}. Skipping this file.`);
+                        resolve(); // Resolve to avoid breaking Promise.all
+                        return;
+                    }
+
+                    const dishName = nameInputs[index].value.trim() || `Dish ${index + 1}`;
+                    let dishPrice = priceInputs[index].value.trim();	
+                    dishPrice = dishPrice ? formatPriceForDisplay(dishPrice) : '$0';	
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // CRITICAL FIX: Ensure ID is an integer
+                        const dish = {
+                            id: Math.floor(Date.now() + Math.random() * 1000),	
+                            name: dishName,
+                            price: dishPrice,
+                            image: e.target.result
+                        };
+                        dishes.push(dish);
+                        resolve();	
+                    };
+                    reader.onerror = function(e) {
+                        console.error(`Error reading file ${file.name}:`, e);
+                        resolve(); // Resolve promise even on error to allow Promise.all to complete
+                    }
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            await Promise.all(promises); // Wait for all asynchronous file reads
+
+            console.log('All bulk files processed. Current dishes array:', dishes); // Diagnostic log
+            renderDishes();
+            renderScheduleGrid();
+            updatePreview(); // Ensure preview also updates with new dishes
+            modalElement.remove(); // Remove the modal
+        }
+
+        // Refactored showDishForm to create a modal (consistent with others)
+        function showDishForm() {
+            console.log('Entering showDishForm().');
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;	
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex;	
+                align-items: center; justify-content: center; padding: 20px;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px;	
+                max-width: 400px; width: 100%;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            `;
+
+            // Elements for single dish form
+            const h3 = document.createElement('h3');
+            h3.textContent = '➕ Add New Dish';
+            h3.style.cssText = `margin-bottom: 20px; color: #495057; text-align: center;`;
+
+            const imgPreview = document.createElement('img');
+            // Assuming currentImageFile is set before showDishForm is called
+            if (currentImageFile) {
+                imgPreview.src = URL.createObjectURL(currentImageFile);
+                imgPreview.alt = "New Dish Preview";
+                imgPreview.style.cssText = `width: 100px; height: 100px; object-fit: cover; border-radius: 10px; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto;`;
+            } else {
+                imgPreview.style.display = 'none'; // Hide if no image is available
+            }
+
+            const nameLabel = document.createElement('label');
+            nameLabel.textContent = 'Dish Name:';
+            nameLabel.style.cssText = `display: block; margin-bottom: 5px; font-weight: 600;`;
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.id = 'dishNameInputModal'; // Use a unique ID for the modal's input
+            // CRITICAL FIX: Set dish name from file name
+            if (currentImageFile) {
+                nameInput.value = currentImageFile.name.split('.')[0].replace(/[_-]/g, ' ');	
+            }
+            nameInput.placeholder = 'Dish name';
+            nameInput.style.cssText = `width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 1rem; margin-bottom: 15px;`;
+            
+            const priceLabel = document.createElement('label');
+            priceLabel.textContent = 'Price:';
+            priceLabel.style.cssText = `display: block; margin-bottom: 5px; font-weight: 600;`;
+            const priceInput = document.createElement('input');
+            priceInput.type = 'text';
+            priceInput.id = 'dishPriceInputModal'; // Unique ID for modal input
+            priceInput.placeholder = 'Price (e.g., $15)';
+            priceInput.style.cssText = `width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 1rem; margin-bottom: 20px;`;
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `display: flex; gap: 10px;`;
+
+            const addDishModalBtn = document.createElement('button');
+            addDishModalBtn.textContent = 'Add Dish'; // Corrected typo here
+            addDishModalBtn.className = 'btn btn-primary'; // Re-use styling
+            addDishModalBtn.style.cssText = `flex: 1; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;`;
+            // Pass currentImageFile, and input elements to addDishFromModal
+            addDishModalBtn.addEventListener('click', () => addDishFromModal(currentImageFile, nameInput, priceInput, modal));
+            
+            const cancelDishModalBtn = document.createElement('button');
+            cancelDishModalBtn.textContent = 'Cancel';
+            cancelDishModalBtn.className = 'btn btn-danger'; // Re-use styling
+            cancelDishModalBtn.style.cssText = `flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;`;
+            cancelDishModalBtn.addEventListener('click', () => modal.remove()); // Uses closure to access 'modal'
+
+            buttonContainer.appendChild(addDishModalBtn);
+            buttonContainer.appendChild(cancelDishModalBtn);
+
+            content.appendChild(h3);
+            content.appendChild(imgPreview); // Add image preview
+            content.appendChild(nameLabel);
+            content.appendChild(nameInput);
+            content.appendChild(priceLabel);
+            content.appendChild(priceInput);
+            content.appendChild(buttonContainer);
+            
+            modal.id = 'singleDishModal'; // Assign a unique ID for this modal
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+
+            nameInput.focus(); // Focus on name input
+            console.log('Single dish add modal displayed.');
+            // Add keypress listener for 'Enter' on the new modal input
+            nameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addDishFromModal(currentImageFile, nameInput, priceInput, modal);
+                }
+            });
+        }
+
+        // New helper function for addDish logic from modal
+        async function addDishFromModal(file, nameInputRef, priceInputRef, modalElement) {
+            console.log('Entering addDishFromModal().');
+            const dishName = nameInputRef.value.trim();
+            let dishPrice = priceInputRef.value.trim();	
+            
+            if (!dishName || !file) {
+                alert('Please enter a dish name and ensure an image is selected.');
+                console.log('Validation failed in addDishFromModal: Missing name or file.');
+                return;
+            }
+
+            dishPrice = dishPrice ? formatPriceForDisplay(dishPrice) : '$0';	
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // CRITICAL FIX: Ensure ID is an integer
+                const dish = {
+                    id: Math.floor(Date.now() + Math.random() * 1000),	
+                    name: dishName,
+                    price: dishPrice,
+                    image: e.target.result
+                };
+                dishes.push(dish);
+                renderDishes();
+                renderScheduleGrid();
+                modalElement.remove(); // Remove the modal on success
+                currentImageFile = null; // Clear current file after adding
+                console.log('Dish added and modal removed.');
+            };
+            reader.onerror = function(e) {
+                console.error(`Error reading file ${file.name}:`, e);
+                alert('Failed to read image. Please try again.');
+                modalElement.remove();
+                currentImageFile = null;
+            }
+            reader.readAsDataURL(file);
+        }
+
+
+        // Refactored editDish to create a modal with corrected cancel button
+        function editDish(dishId) {
+            console.log('Entering editDish().');
+            const dish = dishes.find(d => d.id === dishId);
+            if (!dish) {
+                console.error('Dish not found for editing:', dishId);
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;	
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex;	
+                align-items: center; justify-content: center; padding: 20px;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px;	
+                max-width: 400px; width: 100%;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            `;
+            
+            // Elements for edit dish form
+            const h3 = document.createElement('h3');
+            h3.textContent = '✏️ Edit Dish';
+            h3.style.cssText = `margin-bottom: 20px; color: #495057; text-align: center;`;
+
+            const imgPreview = document.createElement('img');
+            imgPreview.src = dish.image;
+            imgPreview.alt = dish.name;
+            imgPreview.style.cssText = `width: 100px; height: 100px; object-fit: cover; border-radius: 10px; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto;`;
+            
+            const nameLabel = document.createElement('label');
+            nameLabel.textContent = 'Dish Name:';
+            nameLabel.style.cssText = `display: block; margin-bottom: 5px; font-weight: 600;`;
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.id = 'editDishNameModal'; // Unique ID for modal input
+            nameInput.value = dish.name;
+            nameInput.style.cssText = `width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 1rem; margin-bottom: 15px;`;
+            
+            const priceLabel = document.createElement('label');
+            priceLabel.textContent = 'Price:';
+            priceLabel.style.cssText = `display: block; margin-bottom: 5px; font-weight: 600;`;
+            const priceInput = document.createElement('input');
+            priceInput.type = 'text';
+            priceInput.id = 'editDishPriceModal'; // Unique ID for modal input
+            priceInput.value = dish.price;
+            priceInput.placeholder = 'Price (e.g., $15)';
+            priceInput.style.cssText = `width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 1rem; margin-bottom: 20px;`;
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `display: flex; gap: 10px;`;
+
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Save Changes';
+            saveBtn.className = 'btn btn-success'; // Re-use styling
+            saveBtn.style.cssText = `flex: 1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;`;
+            saveBtn.addEventListener('click', () => saveEditedDishFromModal(dish.id, nameInput, priceInput, modal));
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.className = 'btn btn-danger'; // Re-use styling
+            cancelBtn.style.cssText = `flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;`;
+            cancelBtn.addEventListener('click', () => modal.remove()); // Uses closure to access 'modal'
+
+            buttonContainer.appendChild(saveBtn);
+            buttonContainer.appendChild(cancelBtn);
+
+            content.appendChild(h3);
+            content.appendChild(imgPreview);
+            content.appendChild(nameLabel);
+            content.appendChild(nameInput);
+            content.appendChild(priceLabel);
+            content.appendChild(priceInput);
+            content.appendChild(buttonContainer);
+            
+            modal.id = 'editDishModal'; // Assign a unique ID for this modal
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+
+            nameInput.focus(); // Focus on name input
+            console.log('Edit dish modal displayed.');
+        }
+
+        // New helper function for saveEditedDish logic from modal
+        function saveEditedDishFromModal(dishId, nameInputRef, priceInputRef, modalElement) {
+            console.log('Entering saveEditedDishFromModal().');
+            const dish = dishes.find(d => d.id === dishId);
+            if (!dish) {
+                console.error('Dish not found during save for editing:', dishId);
+                return;
+            }
+
+            const newName = nameInputRef.value.trim();
+            let newPrice = priceInputRef.value.trim();	
+
+            if (!newName) {
+                alert('Please enter a dish name');
+                console.log('Validation failed in saveEditedDishFromModal: Missing name.');
+                return;
+            }
+
+            newPrice = newPrice ? formatPriceForDisplay(newPrice) : '$0';	
+
+            dish.name = newName;
+            dish.price = newPrice;
+
+            renderDishes();
+            renderScheduleGrid();
+            modalElement.remove(); // Remove the modal on success
+            console.log('Dish edited and modal removed.');
+        }
+
+        function renderDishes() {
+            console.log('Rendering dishes. Current dishes array:', dishes);
+            const dishesGrid = document.getElementById('dishesGrid');
+            dishesGrid.innerHTML = '';
+
+            dishes.forEach(dish => {
+                const dishElement = document.createElement('div');
+                dishElement.className = 'dish-item';
+                // CRITICAL FIX: Ensure dish.id is an INTEGER for attribute value
+                dishElement.innerHTML = `
+                    <img src="${dish.image}" alt="${dish.name}">
+                    <div class="name">${dish.name}</div>
+                    <div class="price">${dish.price}</div>
+                    <div class="buttons">
+                        <button class="edit-btn" onclick="editDish(${parseInt(dish.id)})">Edit</button>
+                        <button class="delete-btn" onclick="deleteDish(${parseInt(dish.id)})">Delete</button>
+                    </div>
+                `;
+                
+                if (isDragAndDropMode) {
+                    dishElement.setAttribute('draggable', true);
+                    dishElement.setAttribute('data-dish-id', parseInt(dish.id)); // CRITICAL FIX: Ensure data-dish-id is an INTEGER
+                    dishElement.addEventListener('dragstart', handleDishDragStart);
+                } else {
+                    dishElement.removeAttribute('draggable');
+                    dishElement.removeAttribute('data-dish-id');
+                    dishElement.removeEventListener('dragstart', handleDishDragStart);
+                }
+                
+                dishesGrid.appendChild(dishElement);
+            });
+        }
+
+        function addDishToDay(day, dishId) {
+            console.log(`Attempting to add dish ${dishId} (parsed: ${parseInt(dishId)}) to ${day}.`); // Log parsed ID
+            if (!dishId || schedule[day].dishes.length >= 3) {
+                console.warn(`Dish not added to ${day}: ${!dishId ? 'Invalid dishId' : 'Max 3 dishes reached'}`);
+                return;
+            }
+            
+            dishId = parseInt(dishId); // Ensure dishId is an integer for comparison
+            // We fixed ID generation to be integer. Now comparison will work.
+            if (!schedule[day].dishes.includes(dishId)) {
+                schedule[day].dishes.push(dishId);
+                renderScheduleGrid();
+                updatePreview();
+                console.log(`Dish ${dishId} added to ${day}.`);
+            } else {
+                console.log(`Dish ${dishId} already exists in ${day}.`);
+            }
+        }
+
+        function removeDishFromDay(day, dishId) {
+            console.log(`Attempting to remove dish ${dishId} from ${day}.`);
+            schedule[day].dishes = schedule[day].dishes.filter(id => id !== parseInt(dishId)); // Ensure comparison is integer to integer
+            renderScheduleGrid();
+            updatePreview();
+            console.log(`Dish ${dishId} removed from ${day}.`);
+        }
+
+        let draggedDishId = null;
+
+        function handleDishDragStart(e) {
+            draggedDishId = e.target.closest('.dish-item').getAttribute('data-dish-id');
+            e.dataTransfer.setData('text/plain', draggedDishId);
+            e.dataTransfer.effectAllowed = 'copy';
+            e.target.style.opacity = '0.5';	
+        }
+
+        function handleDayDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDayDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDayDrop(e) {
+            e.preventDefault();
+            const dayCard = e.currentTarget;
+            const dayName = dayCard.getAttribute('data-day');
+            dayCard.classList.remove('drag-over');
+            dayCard.classList.remove('no-drop');
+
+            if (schedule[dayName].status !== 'normal' || schedule[dayName].dishes.length >= 3) {
+                return;
+            }
+
+            const droppedDishId = parseInt(e.dataTransfer.getData('text/plain'));
+            if (droppedDishId && !schedule[dayName].dishes.includes(droppedDishId)) {
+                addDishToDay(dayName, droppedDishId);
+            }
+            
+            if (draggedDishId) {
+                const draggedItem = document.querySelector(`.dish-item[data-dish-id="${draggedDishId}"]`);
+                if (draggedItem) {
+                    draggedItem.style.opacity = '1';
+                }
+            }
+            draggedDishId = null;
+        }
+
+        document.addEventListener('dragend', function(e) {
+            if (draggedDishId) {
+                const draggedItem = document.querySelector(`.dish-item[data-dish-id="${draggedDishId}"]`);
+                if (draggedItem) {
+                    draggedItem.style.opacity = '1';
+                }
+            }
+            draggedDishId = null;
+        });
+
+        function updatePreview() {
+            const previewContainer = document.getElementById('schedulePreview');
+            const businessName = document.getElementById('businessName').value || 'Your Catering Business';
+            const businessPhone = document.getElementById('businessPhone').value;
+            const businessAddress = document.getElementById('businessAddress').value;
+            const businessNotes = document.getElementById('businessNotes').value;
+
+            // Get week dates based on user settings
+            const weekData = getWeekDates();
+            let weekDatesDisplay = '';
+            
+            if (weekData) {
+                const formatDate = (date) => {
+                    // Ensure we're working with a proper Date object
+                    const d = new Date(date);
+                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                };
+                weekDatesDisplay = `<div class="preview-week-dates">Weekly Schedule: ${formatDate(weekData.monday)} - ${formatDate(weekData.sunday)}</div>`;
+            }
+
+            let businessInfo = businessPhone;
+            if (businessAddress) businessInfo += ` • ${businessAddress}`;
+
+            const header = `
+                <div class="preview-header">
+                    <div class="preview-business-name">${businessName}</div>
+                    <div class="preview-info-block">	
+                        <div class="preview-business-info">${businessInfo}</div>
+                        ${weekDatesDisplay}
+                    </div>
+                    ${businessNotes ? `<div style="margin-top: 10px; font-style: italic;">${businessNotes}</div>` : ''}
+                </div>
+            `;
+
+            const gridContent = `
+                <div class="preview-grid">
+                    ${days.map(day => {
+                        const dayData = schedule[day];
+                        let content = '';
+                        if (dayData.status === 'off') {
+                            content = '<div class="status-message">🚫 No Service</div>';
+                        } else if (dayData.status === 'tbd') {
+                            content = '<div class="status-message">📱 I will let you know</div>';
+                        } else if (dayData.text) {	
+                            content = '<div class="status-message">' + dayData.text + '</div>'; // Display custom text for TBD/Off (if any)
+                        } else if (dayData.dishes.length === 0) {
+                            content = '<div class="status-message">📝 No dishes selected</div>';
+                        } else {
+                            content = `
+                                <div class="preview-dishes">
+                                    ${dayData.dishes.map(dishId => {
+                                        const dish = dishes.find(d => d.id === dishId);	
+                                        return dish ? `
+                                            <div class="preview-dish">
+                                                <img src="${dish.image}" alt="${dish.name}">
+                                                <div class="preview-dish-content">
+                                                    <div class="preview-dish-name">${dish.name}</div>
+                                                    <div class="preview-dish-price">${dish.price}</div>
+                                                </div>
+                                            </div>
+                                        ` : '';
+                                    }).join('')}
+                                </div>
+                            `;
+                        }
+                        return `
+                            <div class="preview-day">
+                                <div class="preview-day-name">${day}</div>
+                                ${content}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            document.getElementById('schedulePreview').innerHTML = header + gridContent;
+        }
+
+        async function exportAsPNG() {
+            console.log('PNG export started...');
+            
+            if (typeof html2canvas === 'undefined') {
+                alert('Export feature not available in this environment. Please copy the code to use in a regular browser.');
+                return;
+            }
+            
+            const previewElement = document.getElementById('schedulePreview');
+            
+            previewElement.classList.add('force-export-layout');
+
+            await new Promise(resolve => setTimeout(resolve, 500));	
+
+            html2canvas(previewElement, {
+                backgroundColor: null,
+                scale: 2,	
+                logging: true,
+                useCORS: true,	
+                allowTaint: true,	
+                width: previewElement.scrollWidth,	
+                height: previewElement.scrollHeight	
+            }).then(canvas => {
+                console.log('Canvas created successfully');
+                try {
+                    const link = document.createElement('a');
+                    const businessName = document.getElementById('businessName').value.replace(/[^a-zA-Z0-9]/g, '-') || 'catering-schedule';
+                    link.download = `${businessName}-weekly-schedule-${new Date().toISOString().split('T')[0]}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    
+                    if (link.href) {
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        console.log('PNG download initiated');
+                    } else {
+                        const newTab = window.open();
+                        newTab.document.write(`<img src="${canvas.toDataURL()}" style="max-width: 100%;">`);
+                    }
+                } catch (downloadError) {
+                    console.error('Download failed, opening in new tab:', downloadError);
+                    const newTab = window.open();
+                    newTab.document.write(`<img src="${canvas.toDataURL()}" style="max-width: 100%;">`);
+                }
+            }).catch(error => {
+                console.error('Error generating PNG:', error);
+                alert('PNG export failed. This might be due to browser restrictions or issues rendering images. Try using this in a regular browser or right-click the preview and "Save as image".');
+            }).finally(() => {
+                previewElement.classList.remove('force-export-layout');
+            });
+        }
+
+        async function exportAsPDF() {
+            if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+                alert('Export feature not available in this environment. Please copy the code to use in a regular browser.');
+                return;
+            }
+            
+            const previewElement = document.getElementById('schedulePreview');
+            
+            previewElement.classList.add('force-export-layout');
+
+            await new Promise(resolve => setTimeout(resolve, 500));	
+
+            html2canvas(previewElement, {
+                backgroundColor: null,
+                scale: 2,
+                logging: true,
+                useCORS: true,
+                allowTaint: true,
+                width: previewElement.scrollWidth,
+                height: previewElement.scrollHeight
+            }).then(canvas => {
+                console.log('Canvas created for PDF');
+                try {
+                    const { jsPDF } = window.jspdf;
+                    
+                    const pdf = new jsPDF({
+                        orientation: 'landscape',
+                        unit: 'mm',
+                        format: 'a4'
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+                    
+                    // Slightly oversize the image to eliminate any remaining white borders
+                    const pdfWidth = 297; // A4 landscape width
+                    const pdfHeight = 210; // A4 landscape height
+                    const oversizeAmount = 2; // Small oversize to ensure full coverage
+                    
+                    pdf.addImage(imgData, 'PNG', 
+                        -oversizeAmount/2, 
+                        -oversizeAmount/2, 
+                        pdfWidth + oversizeAmount, 
+                        pdfHeight + oversizeAmount
+                    );
+                    
+                    const businessName = document.getElementById('businessName').value.replace(/[^a-zA-Z0-9]/g, '-') || 'catering-schedule';
+                    pdf.save(`${businessName}-weekly-schedule-${new Date().toISOString().split('T')[0]}.pdf`);
+                    console.log('PDF download initiated');
+                } catch (pdfError) {
+                    console.error('PDF generation failed:', pdfError);
+                    alert('PDF export failed. This might be due to browser restrictions in this environment.');
+                }
+            }).catch(error => {
+                console.error('Error generating PDF:', error);
+                alert('PDF export failed. This might be due to browser restrictions in this environment. Try using this in a regular browser.');
+            }).finally(() => {
+                previewElement.classList.remove('force-export-layout');
+            });
+        }
+
+        function deleteDish(dishId) {
+            if (confirm('Are you sure you want to delete this dish?')) {
+                // Remove dish from dishes array
+                dishes = dishes.filter(d => d.id !== parseInt(dishId));
+                
+                // Remove dish from all schedules
+                days.forEach(day => {
+                    schedule[day].dishes = schedule[day].dishes.filter(id => id !== parseInt(dishId));
+                });
+                
+                renderDishes();
+                renderScheduleGrid();
+                updatePreview();
+            }
+        }
+
+        function copyForSharing() {
+            const businessName = document.getElementById('businessName').value || 'Your Catering Business';
+            const businessPhone = document.getElementById('businessPhone').value;
+            
+            // Get week dates based on user settings
+            const weekData = getWeekDates();
+            
+            let text = `🍽️ *${businessName}*\n`;
+            if (businessPhone) text += `📞 ${businessPhone}\n`;
+            
+            if (weekData) {
+                const formatDate = (date) => {
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                };
+                const weekDates = `${formatDate(weekData.monday)} - ${formatDate(weekData.sunday)}`;
+                text += `📅 *Weekly Schedule: ${weekDates}*\n\n`;
+            } else {
+                text += `📅 *Weekly Schedule*\n\n`;
+            }
+
+            days.forEach(day => {
+                const dayData = schedule[day];
+                text += `*${day}:*\n`;
+                
+                if (dayData.status === 'off') {
+                    text += '🚫 No Service\n\n';
+                } else if (dayData.status === 'tbd') {
+                    text += '📱 I will let you know\n\n';
+                } else if (dayData.text) {	
+                    text += `${dayData.text}\n\n`;
+                } else if (dayData.dishes.length > 0) {
+                    dayData.dishes.forEach(dishId => {
+                        const dish = dishes.find(d => d.id === dishId);
+                        if (dish) {
+                            text += `• ${dish.name} ${dish.price}\n`;
+                        }
+                    });
+                    text += '\n';
+                } else {
+                    text += 'No dishes available\n\n';
+                }
+            });
+
+            text += '---\n📱 Share this schedule with your friends!';
+            
+            console.log('Generated text:', text);
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log('Copied using clipboard API');
+                    showCopySuccess();
+                }).catch(error => {
+                    console.error('Clipboard API failed:', error);
+                    fallbackCopy(text);
+                });
+            } else {
+                console.log('Clipboard API not available, using fallback');
+                fallbackCopy(text);
+            }
+        }
+
+        function ensureWrappingMode() {
+            const scheduleGrid = document.querySelector('.schedule-grid');
+            const scheduleContainer = document.querySelector('.schedule-container');
+            const messageDiv = document.querySelector('.schedule-container').previousElementSibling;
+            
+            if (scheduleGrid && scheduleContainer && messageDiv) {
+                scheduleGrid.style.cssText = `
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 15px;
+                    margin-bottom: 30px;
+                    justify-content: center;
+                `;
+                scheduleContainer.style.cssText = `
+                    width: 100%;
+                    padding: 15px;
+                    background: #f8f9fa;
+                    border-radius: 10px;
+                    border: 2px solid #e9ecef;
+                `;
+                
+                messageDiv.innerHTML = '✅ <strong>All 7 days are visible!</strong> Days will automatically arrange to fit your screen';
+                messageDiv.style.background = '#d4edda';
+                messageDiv.style.borderColor = '#c3e6cb';
+            }
+        }
+
+        function fallbackCopy(text) {
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.top = '0';
+                textArea.style.left = '0';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    console.log('Copied using fallback method');
+                    showCopySuccess();
+                } else {
+                    showTextModal(text);
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                showTextModal(text);
+            }
+        }
+
+        function showCopySuccess() {
+            alert('✅ Schedule copied to clipboard!\n\nYou can now paste it in:\n• WhatsApp\n• Facebook\n• Instagram\n• Text messages\n• Email\n\nThe text is formatted and ready to share!');
+        }
+
+        function showTextModal(text) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;	
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex;	
+                align-items: center; justify-content: center; padding: 20px;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px;	
+                max-width: 600px; max-height: 80%; overflow-y: auto;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            `;
+            
+            content.innerHTML = `
+                <h3 style="margin-bottom: 15px; color: #495057;">📱 Copy This Text for Sharing</h3>
+                <p style="margin-bottom: 15px; color: #6c757d;">Copy the text below and paste it into WhatsApp, Facebook, or any messaging app:</p>
+                <textarea readonly style="width: 100%; height: 300px; padding: 15px; border: 2px solid #dee2e6; border-radius: 8px; font-family: inherit; font-size: 14px;">${text}</textarea>
+                <div style="margin-top: 15px; text-align: center;">
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            const textarea = content.querySelector('textarea');
+            textarea.select();
+            textarea.focus();
+            
+            console.log('Showing text modal for manual copying');
+        }
+
+        function debugExportIssues() {
+            console.log('=== EXPORT DEBUG INFO ===');
+            
+            const debugInfo = {
+                'html2canvas available': typeof html2canvas !== 'undefined',
+                'jsPDF available': typeof window.jspdf !== 'undefined',
+                'Clipboard API available': !!(navigator.clipboard && navigator.clipboard.writeText),
+                'execCommand available': document.queryCommandSupported && document.queryCommandSupported('copy'),
+                'User Agent': navigator.userAgent,
+                'Environment': window.location.href.includes('file://') ? 'Local File (file://)' : 'Web Server (http(s)://)'
+            };
+            
+            console.table(debugInfo);
+            
+            let debugText = '🔧 EXPORT DEBUG INFORMATION\n\n';
+            Object.entries(debugInfo).forEach(([key, value]) => {
+                debugText += `${key}: ${value}\n`;
+            });
+            
+            debugText += '\n📋 SOLUTIONS:\n';
+            debugText += 'The PNG/PDF export functions are designed for a web server environment (http:// or https://) due to browser security restrictions on accessing local files.\n\n';
+            debugText += '\nThis app is designed to work fully in regular web browsers hosted on a server; some advanced functionalities are limited within a local `file://` environment due to security restrictions.';
+            
+            alert(debugText);
+            // Also show in console
+            console.log(debugText);
+        }
+    </script>
+</body>
+</html>
