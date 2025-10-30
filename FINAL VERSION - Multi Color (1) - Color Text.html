@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Food Menu</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* CSS Variables for theming */
+        :root {
+            --bg-color: #d4b896;
+            --header-bg: #ffffff;
+            --title-color: #8b4513;
+            --subtitle-color: #666;
+            --card-bg: #ffffff;
+            --card-border: #f0e5d8;
+            --heading-color: #3f4d5c;
+            --text-color: #666;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Basic page setup */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            transition: background-color 0.3s ease;
+        }
+
+        /* UPLOAD ZONE STYLES */
+        .magic-upload-zone {
+            background-color: var(--header-bg);
+            border: 3px dashed var(--title-color);
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+        .magic-upload-zone:hover, .magic-upload-zone.dragover {
+            opacity: 0.9;
+            transform: scale(1.01);
+        }
+        .magic-upload-zone h2 {
+            margin-top: 0;
+            color: var(--title-color);
+            font-weight: 700;
+        }
+        .magic-upload-zone p {
+            font-size: 1rem;
+            color: var(--subtitle-color);
+            margin-bottom: 0;
+        }
+
+        /* Hiding things during capture */
+        .hide-for-capture { display: none !important; }
+
+        /* Header container */
+        .menu-header {
+            background-color: var(--header-bg);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 12px var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        /* Menu Title */
+        h1.menu-title {
+            text-align: center;
+            color: var(--title-color);
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+
+        .menu-subtitle {
+            color: var(--subtitle-color);
+            font-size: 1.1rem;
+            margin-top: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .menu-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .menu-item {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            border: 2px solid var(--card-border);
+        }
+
+        .menu-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px var(--shadow);
+        }
+
+        .menu-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 2px solid var(--card-border);
+            background-color: #f5f5f5; 
+        }
+
+        .item-content {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .item-content h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--heading-color);
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .item-content p {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text-color);
+            margin: 0;
+            transition: color 0.3s ease;
+        }
+
+        /* Theme and Download Controls */
+        .controls-container {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .theme-selector-container {
+            margin-bottom: 25px;
+            background-color: var(--header-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .theme-selector-container label {
+            display: block;
+            color: var(--title-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        #theme-selector {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 2px solid var(--card-border);
+            border-radius: 8px;
+            background-color: white;
+            color: #333;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        #theme-selector:hover {
+            border-color: var(--title-color);
+        }
+
+        #download-btn {
+            background-color: #4a9b6b;
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            width: 100%;
+        }
+
+        #download-btn:hover {
+            background-color: #3d8556;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        /* CAPTURE CONTAINER */
+        #capture-container {
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 1320px;
+            background-color: var(--bg-color);
+            padding: 40px;
+        }
+
+        #capture-container .capture-header {
+            background-color: var(--header-bg);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        #capture-container h1 {
+            text-align: center;
+            color: var(--title-color);
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        #capture-container .capture-subtitle {
+            color: var(--subtitle-color);
+            font-size: 1.1rem;
+            margin-top: 8px;
+        }
+
+        #capture-container .capture-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: flex-start;
+        }
+
+        #capture-container .capture-item {
+            width: 310px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow);
+            overflow: hidden;
+            border: 2px solid var(--card-border);
+        }
+
+        #capture-container .capture-item canvas {
+            width: 310px;
+            height: 200px;
+            border-bottom: 2px solid var(--card-border);
+            display: block;
+            background-color: #f5f5f5;
+        }
+
+        #capture-container .capture-content {
+            padding: 18px;
+        }
+
+        #capture-container .capture-content h3 {
+            margin: 0 0 10px 0;
+            color: var(--heading-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        #capture-container .capture-content p {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="magic-upload-zone" id="drop-zone">
+        <h2>🚀 Offline Mode Loader</h2>
+        <p>Drag and drop all your food images here at once!</p>
+        <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 10px;">(The menu below will automatically find the right photos based on their filenames)</p>
+        <input type="file" id="file-input" multiple accept="image/*" style="display:none">
+    </div>
+
+    <div id="menu-to-capture">
+        <div class="menu-header">
+            <h1 class="menu-title">Our Menu</h1>
+            <p class="menu-subtitle">( Delivery to LSU Campus - $3 )</p>
+        </div>
+
+        <div class="menu-container">
+            <div class="menu-item" data-item-id="1">
+                <img data-name="Gheymeh.jpg" alt="Gheymeh">
+                <div class="item-content">
+                    <h3>#1 Gheymeh</h3>
+                    <p>Beef and split pea stew, very traditional with saffron.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="2">
+                <img data-name="Kabab koobideh with rice and salad.jpg" alt="Kabob Koobideh">
+                <div class="item-content">
+                    <h3>#2 Kabob Koobideh</h3>
+                    <p>Two juicy skewers of charbroiled seasoned ground beef served with charbroiled tomato.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="3">
+                <img data-name="Fasenjoon with chicken.jpg" alt="Khoresht Fesenjoon">
+                <div class="item-content">
+                    <h3>#3 Khoresht Fesenjoon</h3>
+                    <p>A rich sweet tangy stew made of ground walnut, pomegranate sauce, and chicken.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="4">
+                <img data-name="Loubia polo with meat and salad.jpg" alt="Lubia Polo">
+                <div class="item-content">
+                    <h3>#4 Lubia Polo</h3>
+                    <p>Made with green beans, rice, and ground beef.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="5">
+                <img data-name="Haleem bademjoon (with meat) with bread and salad.jpg" alt="Haleem Bademjoon">
+                <div class="item-content">
+                    <h3>#5 Haleem Bademjoon</h3>
+                    <p>Hearty stew made with beef, eggplant, lentils, and Kurd.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="6">
+                <img data-name="Ghormeh sabzi with rice and salad.jpg" alt="Ghormeh Sabzi">
+                <div class="item-content">
+                    <h3>#6 Ghormeh Sabzi</h3>
+                    <p>Made with beef combined with sautéed fresh herbs, kidney beans, and tangy dried limes.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="7">
+                <img data-name="Zereshk polo with chicken.jpg" alt="Zereshk Polo">
+                <div class="item-content">
+                    <h3>#7 Zereshk Polo</h3>
+                    <p>Made with chicken, rice, barberry, and saffron.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="8">
+                <img data-name="Shevid baghali polo with chicken and salad.jpg" alt="Shevid Bagali Polo">
+                <div class="item-content">
+                    <h3>#8 Shevid Bagali Polo</h3>
+                    <p>Made with rice, dill, fava beans, and chicken.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="9">
+                <img data-name="Sabzi polo with fish.jpg" alt="Sabzi Polo">
+                <div class="item-content">
+                    <h3>#9 Sabzi Polo</h3>
+                    <p>Made with rice, chopped herbs, and served with fry fish.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="10">
+                <img data-name="Adas polo.jpg" alt="Adas Polo">
+                <div class="item-content">
+                    <h3>#10 Adas Polo</h3>
+                    <p>Made with rice, lentil, raisin, and ground beef.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="11">
+                <img data-name="Kotlet with tomato, pickles, onion and bread.jpg" alt="Kotlet">
+                <div class="item-content">
+                    <h3>#11 Kotlet</h3>
+                    <p>Made with ground beef, potato, and onions mixed with turmeric and egg.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="12">
+                <img data-name="Lamb shank with the choice of sabzi polo or plain rice and salad.jpg" alt="Lamb Shank">
+                <div class="item-content">
+                    <h3>#12 Lamb Shank</h3>
+                    <p>One whole marinated simmered lamb shank served with rice, chopped herbs, and topped with saffron.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="13">
+                <img data-name="Tachin (made with chicken) with yogurt.jpg" alt="Tachin with Chicken">
+                <div class="item-content">
+                    <h3>#13 Tachin with Chicken</h3>
+                    <p>Crispy baked rice is layered with chicken meat, dried fruits, slivered almond, and saffron.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="14">
+                <img data-name="Kookoo sabzi (veggie food).jpg" alt="Kookoo Sabzi">
+                <div class="item-content">
+                    <h3>#14 Kookoo Sabzi</h3>
+                    <p>Made with vegetables, eggs, walnut, and dried fruits.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="15">
+                <img data-name="Khoresht karafs (celery) with rice and salad.jpg" alt="Khoresht Karafs">
+                <div class="item-content">
+                    <h3>#15 Khoresht Karafs</h3>
+                    <p>Beef stew made with celery, mint, parsley, and saffron.</p>
+                </div>
+            </div>
+
+            <div class="menu-item" data-item-id="16">
+                <img data-name="Kofteh.jpg" alt="Koofteh">
+                <div class="item-content">
+                    <h3>#16 Koofteh</h3>
+                    <p>Meatballs made with ground beef mixed with rice, herbs, and split pea.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="controls-container">
+        <div class="theme-selector-container">
+            <label for="theme-selector">🎨 Choose Color Theme:</label>
+            <select id="theme-selector">
+                <option value="warm-beige">Warm Beige (Default)</option>
+                <option value="classic-white">Classic White</option>
+                <option value="ocean-blue">Ocean Blue</option>
+                <option value="forest-green">Forest Green</option>
+                <option value="sunset-orange">Sunset Orange</option>
+                <option value="lavender-purple">Lavender Purple</option>
+                <option value="rose-pink">Rose Pink</option>
+                <option value="mint-green">Mint Green</option>
+                <option value="coral-peach">Coral Peach</option>
+                <option value="navy-professional">Navy Professional</option>
+                <option value="earthy-brown">Earthy Brown</option>
+                <option value="midnight-dark">Midnight Dark</option>
+            </select>
+        </div>
+        <button id="download-btn">📸 Download Menu as Image</button>
+    </div>
+
+    <!-- Hidden capture container -->
+    <div id="capture-container" style="display: none;">
+        <div class="capture-header">
+            <h1>Our Menu</h1>
+            <p class="capture-subtitle">( Delivery to LSU Campus - $3 )</p>
+        </div>
+        <div class="capture-grid" id="capture-grid"></div>
+    </div>
+
+    <script>
+        // --- THEME SYSTEM ---
+        const themes = {
+            'warm-beige': {
+                bg: '#d4b896',
+                headerBg: '#ffffff',
+                title: '#8b4513',
+                subtitle: '#666',
+                cardBg: '#ffffff',
+                cardBorder: '#f0e5d8',
+                heading: '#3f4d5c',
+                text: '#666',
+                shadow: 'rgba(0, 0, 0, 0.1)'
+            },
+            'classic-white': {
+                bg: '#f5f5f5',
+                headerBg: '#ffffff',
+                title: '#333333',
+                subtitle: '#666',
+                cardBg: '#ffffff',
+                cardBorder: '#e0e0e0',
+                heading: '#2c3e50',
+                text: '#555',
+                shadow: 'rgba(0, 0, 0, 0.08)'
+            },
+            'ocean-blue': {
+                bg: '#a8d5e2',
+                headerBg: '#ffffff',
+                title: '#1a5f7a',
+                subtitle: '#2c5f7a',
+                cardBg: '#ffffff',
+                cardBorder: '#c8e3ed',
+                heading: '#1a5f7a',
+                text: '#3a5f6a',
+                shadow: 'rgba(26, 95, 122, 0.15)'
+            },
+            'forest-green': {
+                bg: '#b8d4b8',
+                headerBg: '#ffffff',
+                title: '#2d5016',
+                subtitle: '#4a6b3a',
+                cardBg: '#ffffff',
+                cardBorder: '#d4e5d4',
+                heading: '#2d5016',
+                text: '#4a6b3a',
+                shadow: 'rgba(45, 80, 22, 0.12)'
+            },
+            'sunset-orange': {
+                bg: '#ffd4a3',
+                headerBg: '#ffffff',
+                title: '#c65d00',
+                subtitle: '#8b5000',
+                cardBg: '#ffffff',
+                cardBorder: '#ffe4c4',
+                heading: '#8b5000',
+                text: '#6b4500',
+                shadow: 'rgba(198, 93, 0, 0.15)'
+            },
+            'lavender-purple': {
+                bg: '#d8c7e6',
+                headerBg: '#ffffff',
+                title: '#6b4c9a',
+                subtitle: '#7d5fa8',
+                cardBg: '#ffffff',
+                cardBorder: '#e8ddf2',
+                heading: '#6b4c9a',
+                text: '#7d5fa8',
+                shadow: 'rgba(107, 76, 154, 0.12)'
+            },
+            'rose-pink': {
+                bg: '#ffd4e5',
+                headerBg: '#ffffff',
+                title: '#c2185b',
+                subtitle: '#8b1548',
+                cardBg: '#ffffff',
+                cardBorder: '#ffe4f0',
+                heading: '#c2185b',
+                text: '#8b1548',
+                shadow: 'rgba(194, 24, 91, 0.12)'
+            },
+            'mint-green': {
+                bg: '#c7ece6',
+                headerBg: '#ffffff',
+                title: '#00695c',
+                subtitle: '#00897b',
+                cardBg: '#ffffff',
+                cardBorder: '#d4f4f0',
+                heading: '#00695c',
+                text: '#00897b',
+                shadow: 'rgba(0, 105, 92, 0.12)'
+            },
+            'coral-peach': {
+                bg: '#ffcab8',
+                headerBg: '#ffffff',
+                title: '#d84315',
+                subtitle: '#bf360c',
+                cardBg: '#ffffff',
+                cardBorder: '#ffddd0',
+                heading: '#d84315',
+                text: '#bf360c',
+                shadow: 'rgba(216, 67, 21, 0.12)'
+            },
+            'navy-professional': {
+                bg: '#b8c6db',
+                headerBg: '#ffffff',
+                title: '#1a237e',
+                subtitle: '#283593',
+                cardBg: '#ffffff',
+                cardBorder: '#c5d3e8',
+                heading: '#1a237e',
+                text: '#283593',
+                shadow: 'rgba(26, 35, 126, 0.15)'
+            },
+            'earthy-brown': {
+                bg: '#d7ccc8',
+                headerBg: '#ffffff',
+                title: '#5d4037',
+                subtitle: '#6d4c41',
+                cardBg: '#ffffff',
+                cardBorder: '#e6ddd9',
+                heading: '#5d4037',
+                text: '#6d4c41',
+                shadow: 'rgba(93, 64, 55, 0.12)'
+            },
+            'midnight-dark': {
+                bg: '#37474f',
+                headerBg: '#263238',
+                title: '#90caf9',
+                subtitle: '#b0bec5',
+                cardBg: '#455a64',
+                cardBorder: '#546e7a',
+                heading: '#90caf9',
+                text: '#cfd8dc',
+                shadow: 'rgba(0, 0, 0, 0.3)'
+            }
+        };
+
+        function applyTheme(themeName) {
+            const theme = themes[themeName];
+            const root = document.documentElement;
+            
+            root.style.setProperty('--bg-color', theme.bg);
+            root.style.setProperty('--header-bg', theme.headerBg);
+            root.style.setProperty('--title-color', theme.title);
+            root.style.setProperty('--subtitle-color', theme.subtitle);
+            root.style.setProperty('--card-bg', theme.cardBg);
+            root.style.setProperty('--card-border', theme.cardBorder);
+            root.style.setProperty('--heading-color', theme.heading);
+            root.style.setProperty('--text-color', theme.text);
+            root.style.setProperty('--shadow', theme.shadow);
+        }
+
+        // Theme selector event listener
+        document.getElementById('theme-selector').addEventListener('change', function(e) {
+            applyTheme(e.target.value);
+        });
+
+        // --- PART 1: THE MAGIC LOADER ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                const targetImg = document.querySelector(`img[data-name="${file.name}"]`);
+                
+                if (targetImg) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        targetImg.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // --- HELPER FUNCTION: Convert img to properly cropped canvas ---
+        function createCroppedCanvas(imgElement, targetWidth, targetHeight) {
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+
+            const imgAspect = imgElement.naturalWidth / imgElement.naturalHeight;
+            const targetAspect = targetWidth / targetHeight;
+
+            let drawWidth, drawHeight, offsetX, offsetY;
+
+            if (imgAspect > targetAspect) {
+                drawHeight = targetHeight;
+                drawWidth = imgElement.naturalWidth * (targetHeight / imgElement.naturalHeight);
+                offsetX = (targetWidth - drawWidth) / 2;
+                offsetY = 0;
+            } else {
+                drawWidth = targetWidth;
+                drawHeight = imgElement.naturalHeight * (targetWidth / imgElement.naturalWidth);
+                offsetX = 0;
+                offsetY = (targetHeight - drawHeight) / 2;
+            }
+
+            ctx.drawImage(imgElement, offsetX, offsetY, drawWidth, drawHeight);
+            return canvas;
+        }
+
+        // --- PART 2: THE DOWNLOADER ---
+        document.getElementById('download-btn').addEventListener('click', function() {
+            const captureContainer = document.getElementById('capture-container');
+            const captureGrid = document.getElementById('capture-grid');
+            const menuItems = document.querySelectorAll('.menu-item');
+
+            captureGrid.innerHTML = '';
+
+            const processPromises = Array.from(menuItems).map(item => {
+                return new Promise((resolve) => {
+                    const img = item.querySelector('img');
+                    const h3 = item.querySelector('h3');
+                    const p = item.querySelector('p');
+
+                    const captureItem = document.createElement('div');
+                    captureItem.className = 'capture-item';
+
+                    if (img.complete && img.naturalHeight !== 0 && img.src && !img.src.endsWith('.jpg')) {
+                        const canvas = createCroppedCanvas(img, 310, 200);
+                        captureItem.appendChild(canvas);
+                        
+                        const captureContent = document.createElement('div');
+                        captureContent.className = 'capture-content';
+                        
+                        const captureH3 = document.createElement('h3');
+                        captureH3.textContent = h3.textContent;
+                        
+                        const captureP = document.createElement('p');
+                        captureP.textContent = p.textContent;
+                        
+                        captureContent.appendChild(captureH3);
+                        captureContent.appendChild(captureP);
+                        captureItem.appendChild(captureContent);
+                        
+                        resolve(captureItem);
+                    } else {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 310;
+                        canvas.height = 200;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#f5f5f5';
+                        ctx.fillRect(0, 0, 310, 200);
+                        captureItem.appendChild(canvas);
+                        
+                        const captureContent = document.createElement('div');
+                        captureContent.className = 'capture-content';
+                        
+                        const captureH3 = document.createElement('h3');
+                        captureH3.textContent = h3.textContent;
+                        
+                        const captureP = document.createElement('p');
+                        captureP.textContent = p.textContent;
+                        
+                        captureContent.appendChild(captureH3);
+                        captureContent.appendChild(captureP);
+                        captureItem.appendChild(captureContent);
+                        
+                        resolve(captureItem);
+                    }
+                });
+            });
+
+            Promise.all(processPromises).then(captureItems => {
+                captureItems.forEach(item => captureGrid.appendChild(item));
+
+                captureContainer.style.display = 'block';
+                captureContainer.style.position = 'fixed';
+                captureContainer.style.left = '-9999px';
+
+                setTimeout(() => {
+                    const currentBgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim();
+                    
+                    html2canvas(captureContainer, {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: currentBgColor
+                    }).then(canvas => {
+                        captureContainer.style.display = 'none';
+
+                        const link = document.createElement('a');
+                        link.download = 'our-menu.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    }).catch(err => {
+                        alert("Oh no, something went wrong with the export!");
+                        console.error(err);
+                        captureContainer.style.display = 'none';
+                    });
+                }, 200);
+            });
+        });
+    </script>
+</body>
+</html>
