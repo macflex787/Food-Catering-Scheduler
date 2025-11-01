@@ -7,9 +7,31 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        /* Base styles & typography */
-        * {
+<style>
+    /* CSS Variables for theming */
+    :root {
+        --export-bg: linear-gradient(135deg, #f7e6d3 0%, #e8d5b7 30%, #ddbf94 70%, #d4af7a 100%);
+        --export-bg-color: #e8d5b7; /* Fallback for html2canvas */
+        --export-header-bg: rgba(255, 255, 255, 0.95);
+        --export-title-color: #8b4513;
+        --export-phone-color: #000000;
+        --export-info-color: #654321;
+        --export-subtitle-color: #a0522d;
+        --export-footer-bg: rgba(255, 255, 255, 0.95);
+        --export-footer-border: #2d3748;
+        --export-footer-text: #000000;
+        --export-footer-accent: #8b4513;
+        --export-day-card-bg: rgba(255, 255, 255, 0.92);
+        --export-day-name-bg: #2d3748;
+        --export-day-name-text: #ffffff;
+        --export-dish-card-bg: rgba(255, 255, 255, 0.98);
+        --export-dish-name-color: #2d3748;
+        --export-dish-price-color: #2f855a;
+        --export-status-text: #718096;
+    }
+
+    /* Base styles & typography */
+    * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -879,7 +901,7 @@
             flex-grow: 1;
         }
 
-        .schedule-preview.force-export-layout {
+.schedule-preview.force-export-layout {
             min-width: 1600px !important;
             overflow-x: visible !important;
             padding: 60px !important;
@@ -887,7 +909,7 @@
             flex-direction: column !important;
             align-items: center !important;
             justify-content: flex-start !important;
-            background: linear-gradient(135deg, #f7e6d3 0%, #e8d5b7 30%, #ddbf94 70%, #d4af7a 100%) !important;
+            background: var(--export-bg) !important; /* CHANGED */
             position: relative !important;
         }
 
@@ -898,7 +920,7 @@
             left: 0 !important;
             width: 100% !important;
             height: 100% !important;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 20% 50%, rgba(139,69,19,0.08) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(160,82,45,0.06) 0%, transparent 50%),
                 radial-gradient(circle at 40% 80%, rgba(101,67,33,0.04) 0%, transparent 50%) !important;
@@ -906,25 +928,24 @@
             z-index: 1 !important;
         }
 
-        .schedule-preview.force-export-layout .preview-header {
+.schedule-preview.force-export-layout .preview-header {
             margin-bottom: 50px !important;
             padding-bottom: 30px !important;
             text-align: center !important;
             position: relative !important;
             z-index: 2 !important;
-            background: rgba(255, 255, 255, 0.95) !important;
+            background: var(--export-header-bg) !important;
             border-radius: 25px !important;
             padding: 40px 50px !important;
             backdrop-filter: blur(10px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 
-                0 25px 50px rgba(0, 0, 0, 0.25),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Kept original light border */
+            /* --- CORRECTED SHADOW --- */
+            box-shadow: 0 4px 12px var(--shadow, rgba(0,0,0,0.3)) !important;
         }
 
         .schedule-preview.force-export-layout .preview-business-name {
             font-size: 3.2rem !important;
-            color: #8b4513 !important;
+            color: var(--export-title-color) !important; /* CHANGED */
             margin-bottom: 15px !important;
             font-weight: 800 !important;
             letter-spacing: -1px !important;
@@ -933,7 +954,7 @@
 
         .schedule-preview.force-export-layout .preview-phone-number {
             font-size: 3.2rem !important;
-            color: #000000 !important;
+            color: var(--export-phone-color) !important; /* CHANGED */
             margin-bottom: 20px !important;
             font-weight: 800 !important;
             letter-spacing: -0.5px !important;
@@ -949,7 +970,7 @@
         .schedule-preview.force-export-layout .preview-business-info {
             font-size: 1.4rem !important;
             display: block !important;
-            color: #654321 !important;
+            color: var(--export-info-color) !important; /* CHANGED */
             font-weight: 500 !important;
         }
 
@@ -957,20 +978,19 @@
             font-size: 1.8rem !important;
             margin-top: 20px !important;
             display: block !important;
-            color: #a0522d !important;
+            color: var(--export-subtitle-color) !important; /* CHANGED */
             font-weight: 700 !important;
             text-shadow: 0 1px 2px rgba(160, 82, 45, 0.2) !important;
         }
 
-        .schedule-preview.force-export-layout .preview-footer {
+.schedule-preview.force-export-layout .preview-footer {
             margin-top: 45px !important;
             padding: 40px 50px !important;
-            background: rgba(255, 255, 255, 0.95) !important;
+            background: var(--export-footer-bg) !important;
             border-radius: 25px !important;
-            border-top: 3px solid #2d3748 !important;
-            box-shadow: 
-                0 25px 50px rgba(0, 0, 0, 0.25),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+            border-top: 3px solid var(--export-footer-border) !important;
+            /* --- CORRECTED SHADOW --- */
+            box-shadow: 0 4px 12px var(--shadow, rgba(0,0,0,0.3)) !important;
             backdrop-filter: blur(10px) !important;
             position: relative !important;
             z-index: 2 !important;
@@ -978,7 +998,7 @@
 
         .schedule-preview.force-export-layout .preview-footer-line {
             font-size: 2.0rem !important;
-            color: #000000 !important;
+            color: var(--export-footer-text) !important; /* CHANGED */
             margin-bottom: 15px !important;
             line-height: 1.6 !important;
             font-weight: 700 !important;
@@ -986,7 +1006,7 @@
         }
 
         .schedule-preview.force-export-layout .preview-footer-line .accent {
-            color: #8b4513 !important;
+            color: var(--export-footer-accent) !important; /* CHANGED */
         }
 
         .schedule-preview.force-export-layout .preview-grid {
@@ -1000,7 +1020,7 @@
             max-width: unset !important;
             border-radius: 20px !important;
             overflow: hidden !important;
-            box-shadow: 
+            box-shadow:
                 0 30px 60px rgba(0, 0, 0, 0.3),
                 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
             position: relative !important;
@@ -1009,7 +1029,7 @@
 
         .schedule-preview.force-export-layout .preview-day {
             padding: 20px 15px !important;
-            background: rgba(255, 255, 255, 0.92) !important;
+            background: var(--export-day-card-bg) !important; /* CHANGED */
             backdrop-filter: blur(10px) !important;
             border-radius: 0 !important;
             box-shadow: none !important;
@@ -1029,9 +1049,9 @@
             left: 0 !important;
             width: 100% !important;
             height: 100% !important;
-            background: linear-gradient(180deg, 
-                rgba(255, 255, 255, 0.1) 0%, 
-                transparent 50%, 
+            background: linear-gradient(180deg,
+                rgba(255, 255, 255, 0.1) 0%,
+                transparent 50%,
                 rgba(0, 0, 0, 0.02) 100%) !important;
             pointer-events: none !important;
             z-index: 1 !important;
@@ -1043,9 +1063,9 @@
             min-height: 65px !important;
             border-radius: 15px !important;
             margin-bottom: 20px !important;
-            background: #2d3748 !important;
-            color: #ffffff !important;
-            box-shadow: 
+            background: var(--export-day-name-bg) !important; /* CHANGED */
+            color: var(--export-day-name-text) !important; /* CHANGED */
+            box-shadow:
                 0 4px 12px rgba(45, 55, 72, 0.25),
                 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
             position: relative !important;
@@ -1063,16 +1083,17 @@
             z-index: 2 !important;
         }
 
-        .schedule-preview.force-export-layout .preview-dish {
+.schedule-preview.force-export-layout .preview-dish {
             height: 340px !important;
             padding: 25px 20px !important;
             border-radius: 18px !important;
-            background: rgba(255, 255, 255, 0.98) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 
-                0 15px 35px rgba(0, 0, 0, 0.1),
-                0 5px 15px rgba(0, 0, 0, 0.08),
-                0 0 0 1px rgba(255, 255, 255, 0.3) inset !important;
+            background: var(--export-dish-card-bg) !important;
+            
+            /* --- CORRECTED STYLES --- */
+            border: 1px solid var(--export-day-name-bg); /* Use a theme border */
+            box-shadow: 0 4px 12px var(--shadow, rgba(0,0,0,0.3)); /* Use the theme's shadow */
+            /* --- END CORRECTION --- */
+            
             backdrop-filter: blur(10px) !important;
             justify-content: space-between !important;
             transition: transform 0.3s ease !important;
@@ -1087,9 +1108,9 @@
             left: -2px !important;
             width: calc(100% + 4px) !important;
             height: calc(100% + 4px) !important;
-            background: linear-gradient(45deg, 
-                transparent 30%, 
-                rgba(255, 255, 255, 0.1) 50%, 
+            background: linear-gradient(45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
                 transparent 70%) !important;
             border-radius: 18px !important;
             z-index: -1 !important;
@@ -1107,15 +1128,15 @@
             line-height: 1.4 !important;
             margin-bottom: 10px !important;
             font-weight: 600 !important;
-            color: #2d3748 !important;
-	    hyphens: none !important;
+            color: var(--export-dish-name-color) !important; /* CHANGED */
+            hyphens: none !important;
         }
 
         .schedule-preview.force-export-layout .preview-dish-price {
             font-size: 1.25rem !important;
             margin-top: auto !important;
             font-weight: 800 !important;
-            color: #2f855a !important;
+            color: var(--export-dish-price-color) !important; /* CHANGED */
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
         }
 
@@ -1127,7 +1148,7 @@
             padding: 30px 8px !important;
             border-radius: 15px !important;
             text-align: center !important;
-            color: #718096 !important;
+            color: var(--export-status-text) !important; /* CHANGED */
             font-style: italic !important;
             font-size: 0.85rem !important;
             font-weight: 400 !important;
@@ -1499,8 +1520,31 @@
                 </div>
             </div>
 
-            <div class="section export-section">
+<div class="section export-section">
                 <h2>Export Schedule</h2>
+
+                <div class="theme-selector-container" style="margin-bottom: 25px; background: #f8fafd; padding: 20px; border-radius: 12px; border: 1px solid #eef2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <label for="theme-selector" style="display: block; color: #2c3e50; font-size: 1.1rem; font-weight: 600; margin-bottom: 12px;">🎨 Choose Export Theme:</label>
+                    <select id="theme-selector" style="width: 100%; padding: 12px 15px; font-size: 16px; border: 1px solid #dbe2e9; border-radius: 8px; background-color: white; color: #333; cursor: pointer;">
+                        <option value="warm-beige">Warm Beige (Default)</option>
+                        <option value="classic-white">Classic White</option>
+                        <option value="ocean-blue">Ocean Blue</option>
+                        <option value="forest-green">Forest Green</option>
+                        <option value="sunset-orange">Sunset Orange</option>
+                        <option value="lavender-purple">Lavender Purple</option>
+                        <option value="rose-pink">Rose Pink</option>
+                        <option value="mint-green">Mint Green</option>
+                        <option value="coral-peach">Coral Peach</option>
+                        <option value="navy-professional">Navy Professional</option>
+                        <option value="earthy-brown">Earthy Brown</option>
+                        <option value="midnight-dark">Midnight Dark</option>
+                    </select>
+                    <div style="margin-top: 15px; text-align: left; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="forceBlackDishNames" style="width: 16px; height: 16px; cursor: pointer;">
+                        <label for="forceBlackDishNames" style="color: #333; font-weight: 500; cursor: pointer;">Use Black for Dish Names</label>
+                    </div>
+                    </div>
+                </div>
                 <div class="export-buttons">
                     <button class="btn btn-success" id="exportPngBtn">📸 Export PNG</button>
                     <button class="btn btn-danger" id="exportPdfBtn" style="display: none;">📄 Export PDF</button>
@@ -1522,7 +1566,292 @@
         let dishes = [];
         let schedule = {};
         let currentImageFile = null;
-        let isDragAndDropMode = false;
+		let isDragAndDropMode = false;
+
+        // --- ADD ALL THIS CODE ---
+
+        const themes = {
+            'warm-beige': {
+                bg: 'linear-gradient(135deg, #f7e6d3 0%, #e8d5b7 30%, #ddbf94 70%, #d4af7a 100%)',
+                bgColor: '#e8d5b7',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#8b4513',
+                phone: '#000000',
+                info: '#654321',
+                subtitle: '#a0522d',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#2d3748',
+                footerText: '#000000',
+                footerAccent: '#8b4513',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#2d3748',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#2d3748',
+                dishPrice: '#2f855a',
+                statusText: '#718096'
+            },
+            'classic-white': {
+                bg: 'linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%)',
+                bgColor: '#f5f7fa',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#343a40',
+                phone: '#000000',
+                info: '#495057',
+                subtitle: '#007bff',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#007bff',
+                footerText: '#212529',
+                footerAccent: '#007bff',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#007bff',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#343a40',
+                dishPrice: '#28a745',
+                statusText: '#6c757d'
+            },
+            'ocean-blue': {
+                bg: 'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)',
+                bgColor: '#e0f7fa',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#00796b',
+                phone: '#004d40',
+                info: '#004d40',
+                subtitle: '#0097a7',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#00796b',
+                footerText: '#004d40',
+                footerAccent: '#0097a7',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#00796b',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#004d40',
+                dishPrice: '#00695c',
+                statusText: '#4bacb8'
+            },
+            'forest-green': {
+                bg: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)',
+                bgColor: '#e8f5e9',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#2e7d32',
+                phone: '#1b5e20',
+                info: '#1b5e20',
+                subtitle: '#388e3c',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#2e7d32',
+                footerText: '#1b5e20',
+                footerAccent: '#388e3c',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#2e7d32',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#1b5e20',
+                dishPrice: '#43a047',
+                statusText: '#558b2f'
+            },
+            'sunset-orange': {
+                bg: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
+                bgColor: '#fff3e0',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#ef6c00',
+                phone: '#e65100',
+                info: '#e65100',
+                subtitle: '#f57c00',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#ef6c00',
+                footerText: '#e65100',
+                footerAccent: '#f57c00',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#ef6c00',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#e65100',
+                dishPrice: '#2e7d32',
+                statusText: '#fb8c00'
+            },
+            'lavender-purple': {
+                bg: 'linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%)',
+                bgColor: '#f3e5f5',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#6a1b9a',
+                phone: '#4a148c',
+                info: '#4a148c',
+                subtitle: '#8e24aa',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#6a1b9a',
+                footerText: '#4a148c',
+                footerAccent: '#8e24aa',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#6a1b9a',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#4a148c',
+                dishPrice: '#2e7d32',
+                statusText: '#9c27b0'
+            },
+            'rose-pink': {
+                bg: 'linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%)',
+                bgColor: '#fce4ec',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#d81b60',
+                phone: '#ad1457',
+                info: '#ad1457',
+                subtitle: '#c2185b',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#d81b60',
+                footerText: '#ad1457',
+                footerAccent: '#c2185b',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#d81b60',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#ad1457',
+                dishPrice: '#2e7d32',
+                statusText: '#e91e63'
+            },
+            'mint-green': {
+                bg: 'linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%)',
+                bgColor: '#e0f2f1',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#00897b',
+                phone: '#00695c',
+                info: '#00695c',
+                subtitle: '#009688',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#00897b',
+                footerText: '#00695c',
+                footerAccent: '#009688',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#00897b',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#00695c',
+                dishPrice: '#2e7d32',
+                statusText: '#00bfa5'
+            },
+            'coral-peach': {
+                bg: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)',
+                bgColor: '#fff0e6',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#ff6f61',
+                phone: '#e64a19',
+                info: '#e64a19',
+                subtitle: '#f4511e',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#ff6f61',
+                footerText: '#e64a19',
+                footerAccent: '#f4511e',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#ff6f61',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#e64a19',
+                dishPrice: '#2e7d32',
+                statusText: '#ff8a65'
+            },
+            'navy-professional': {
+                bg: 'linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%)',
+                bgColor: '#e8eaf6',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#283593',
+                phone: '#1a237e',
+                info: '#1a237e',
+                subtitle: '#303f9f',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#283593',
+                footerText: '#1a237e',
+                footerAccent: '#303f9f',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#283593',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#1a237e',
+                dishPrice: '#2e7d32',
+                statusText: '#3f51b5'
+            },
+            'earthy-brown': {
+                bg: 'linear-gradient(135deg, #efebe9 0%, #d7ccc8 100%)',
+                bgColor: '#efebe9',
+                headerBg: 'rgba(255, 255, 255, 0.95)',
+                title: '#5d4037',
+                phone: '#3e2723',
+                info: '#3e2723',
+                subtitle: '#6d4c41',
+                footerBg: 'rgba(255, 255, 255, 0.95)',
+                footerBorder: '#5d4037',
+                footerText: '#3e2723',
+                footerAccent: '#6d4c41',
+                dayCardBg: 'rgba(255, 255, 255, 0.92)',
+                dayNameBg: '#5d4037',
+                dayNameText: '#ffffff',
+                dishCardBg: 'rgba(255, 255, 255, 0.98)',
+                dishName: '#3e2723',
+                dishPrice: '#2e7d32',
+                statusText: '#795548'
+            },
+'midnight-dark': {
+                bg: 'linear-gradient(135deg, #37474f 0%, #263238 100%)',
+                bgColor: '#37474f',
+                headerBg: 'rgba(38, 50, 56, 0.95)', // #263238
+                title: '#90caf9',
+                phone: '#cfd8dc',
+                info: '#b0bec5',
+                subtitle: '#b0bec5',
+                footerBg: 'rgba(38, 50, 56, 0.95)', // #263238
+                footerBorder: '#546e7a',
+                footerText: '#cfd8dc',
+                footerAccent: '#90caf9',
+                dayCardBg: 'rgba(69, 90, 100, 0.92)', // #455a64
+                dayNameBg: 'rgba(38, 50, 56, 0.95)', // <-- Corrected (dark)
+                dayNameText: '#90caf9', // <-- Corrected (light)
+                dishCardBg: 'rgba(69, 90, 100, 0.98)', // #455a64
+                dishName: '#90caf9',
+                dishPrice: '#cfd8dc',
+                statusText: '#b0bec5'
+            }
+        };
+
+        function applyTheme(themeName) {
+            const theme = themes[themeName];
+            const root = document.documentElement;
+
+            // Get the checkbox
+            const forceBlackCheckbox = document.getElementById('forceBlackDishNames');
+            
+            root.style.setProperty('--export-bg', theme.bg);
+            root.style.setProperty('--export-bg-color', theme.bgColor);
+            root.style.setProperty('--export-header-bg', theme.headerBg);
+            root.style.setProperty('--export-title-color', theme.title);
+            root.style.setProperty('--export-phone-color', theme.phone);
+            root.style.setProperty('--export-info-color', theme.info);
+            root.style.setProperty('--export-subtitle-color', theme.subtitle);
+            root.style.setProperty('--export-footer-bg', theme.footerBg);
+            root.style.setProperty('--export-footer-border', theme.footerBorder);
+            root.style.setProperty('--export-footer-text', theme.footerText);
+            root.style.setProperty('--export-footer-accent', theme.footerAccent);
+            root.style.setProperty('--export-day-card-bg', theme.dayCardBg);
+            root.style.setProperty('--export-day-name-bg', theme.dayNameBg);
+            root.style.setProperty('--export-day-name-text', theme.dayNameText);
+            root.style.setProperty('--export-dish-card-bg', theme.dishCardBg);
+            
+            // --- NEW LOGIC HERE ---
+            // Check if the box is checked (and make sure it exists)
+            if (forceBlackCheckbox && forceBlackCheckbox.checked) {
+                // If checked, force the color to black
+                root.style.setProperty('--export-dish-name-color', '#000000');
+            } else {
+                // Otherwise, use the color from the theme
+                root.style.setProperty('--export-dish-name-color', theme.dishName);
+            }
+            // --- END OF NEW LOGIC ---
+            
+            root.style.setProperty('--export-dish-price-color', theme.dishPrice);
+            root.style.setProperty('--export-status-text', theme.statusText);
+        }
+
+        // --- END OF CODE TO ADD ---
 
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -1634,6 +1963,16 @@ function setCurrentWeek() {
             document.getElementById('showWeekDates').addEventListener('change', handleWeekToggle);
             document.getElementById('weekStartDate').addEventListener('change', updatePreview);
             document.getElementById('currentWeekBtn').addEventListener('click', setCurrentWeek);
+
+			document.getElementById('theme-selector').addEventListener('change', (e) => applyTheme(e.target.value));
+            // --- ADD THIS NEW LISTENER ---
+            document.getElementById('forceBlackDishNames').addEventListener('change', () => {
+                // Get the currently selected theme
+                const currentTheme = document.getElementById('theme-selector').value;
+                // Re-apply the theme, which will now check the checkbox's new state
+                applyTheme(currentTheme);
+            });
+            // --- END OF NEW LISTENER ---
 
             const uploadArea = document.getElementById('uploadArea');
             const imageInput = document.getElementById('imageInput');
@@ -2333,8 +2672,11 @@ function setCurrentWeek() {
 
             await new Promise(resolve => setTimeout(resolve, 500));	
 
+			// Get the current theme's solid background color for html2canvas
+            const currentBgColor = getComputedStyle(document.documentElement).getPropertyValue('--export-bg-color').trim();
+
             html2canvas(previewElement, {
-                backgroundColor: null,
+                backgroundColor: currentBgColor, // CHANGED
                 scale: 2,	
                 logging: true,
                 useCORS: true,	
@@ -2612,3 +2954,4 @@ function setCurrentWeek() {
     </script>
 </body>
 </html>
+
